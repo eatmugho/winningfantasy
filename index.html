@@ -263,7 +263,7 @@
             // 4. UserMatchScores
             log("\n--- 📝 Importing User Match Scores ---");
             for (const ums of userMatchScores) {
-                const docId = `${ums.UserCd}_${ums.MatchCd}`;
+                const docId = `${ums.UserCd}-${ums.MatchCd}`;
                 await setDoc(doc(db, "UserMatchScore", docId), ums);
                 processedItems++;
                 updateProgress(processedItems, totalItems);
