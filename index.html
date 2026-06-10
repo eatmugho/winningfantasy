@@ -36,6 +36,13 @@
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
         .rank-row { background: #f9f9f9; }
         .hidden { display: none !important; }
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content {
+            background: white; padding: 20px; border-radius: 12px; max-width: 800px; max-height: 80vh; overflow-y: auto; width: 90%;
+        }
     </style>
 </head>
 <body>
@@ -83,8 +90,8 @@
                     <tr>
                         <th>排名</th>
                         <th>用戶</th>
-                        <th>已預測</th>
                         <th>總分</th>
+                        <th>操作</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -99,6 +106,15 @@
                 更新賽果
             </button>
         </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div id="detailsModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalUserName"></h3>
+        <div id="modalMatchesList"></div>
+        <button onclick="closeModal()" style="margin-top: 15px;">關閉</button>
     </div>
 </div>
 
@@ -120,6 +136,7 @@
     let currentEventCd = null;
     let matchesData = [];
     let isAdmin = false;
+    let allMatchesCache = {};
 
     // ==================== Auth ====================
     async function signInWithGoogle() {
@@ -135,7 +152,6 @@
     }
 
     async function handleUserRegistration() {
-        // Extract username from email (e.g. eatmugho@gmail.com -> eatmugho)
         let userCd = currentUser.email ? currentUser.email.split('@')[0] : currentUser.uid;
 
         const userRef = db.collection("User").doc(userCd);
@@ -258,9 +274,10 @@
 
     async function loadUserPredictions() {
         if (!currentUser) return;
+        const userCd = currentUser.email ? currentUser.email.split('@')[0] : currentUser.uid;
 
         const snapshot = await db.collection("UserMatchScore")
-            .where("UserCd", "==", currentUser.email ? currentUser.email.split('@')[0] : currentUser.uid)
+            .where("UserCd", "==", userCd)
             .get();
 
         snapshot.forEach(doc => {
@@ -310,52 +327,124 @@
         alert(`✅ 已成功提交 ${count} 場比賽的預測！`);
     }
 
-    // ==================== Ranking ====================
+    // ==================== Ranking with Details ====================
     async function loadRanking() {
         if (!currentEventCd) return;
 
         const tbody = document.querySelector("#rankingTable tbody");
         tbody.innerHTML = "<tr><td colspan='4'>載入中...</td></tr>";
 
-        const snapshot = await db.collection("UserMatchScore")
+        // Get all UserMatchScore for this event
+        const scoreSnapshot = await db.collection("UserMatchScore")
             .where("MatchCd", ">=", currentEventCd)
             .where("MatchCd", "<=", currentEventCd + "\uf8ff")
             .get();
 
-        const userStats = {};
+        const userScoresMap = {};
+        const userMatchMap = {};
 
-        snapshot.forEach(doc => {
+        scoreSnapshot.forEach(doc => {
             const data = doc.data();
-            if (!userStats[data.UserCd]) {
-                userStats[data.UserCd] = { total: 0, name: "未知用戶" };
+            const uid = data.UserCd;
+            if (!userScoresMap[uid]) {
+                userScoresMap[uid] = { totalPoints: 0, matches: [] };
+                userMatchMap[uid] = [];
             }
-            userStats[data.UserCd].total++;
+            userMatchMap[uid].push(data);
         });
 
-        for (let uid of Object.keys(userStats)) {
-            const userDoc = await db.collection("User").doc(uid).get();
-            if (userDoc.exists) userStats[uid].name = userDoc.data().Name;
+        // Get all matches for accurate scoring
+        const matchSnapshot = await db.collection("Match")
+            .where("EventCd", "==", currentEventCd)
+            .get();
+
+        const matchMap = {};
+        matchSnapshot.forEach(doc => {
+            matchMap[doc.id] = doc.data();
+        });
+
+        // Calculate points
+        for (let uid in userMatchMap) {
+            userMatchMap[uid].forEach(ums => {
+                const match = matchMap[ums.MatchCd];
+                if (!match) return;
+                const points = calculatePoints(match, ums);
+                userScoresMap[uid].totalPoints += points;
+                userScoresMap[uid].matches.push({ ...ums, points });
+            });
         }
 
-        tbody.innerHTML = "";
-        const sorted = Object.entries(userStats).sort((a, b) => b[1].total - a[1].total);
+        // Get user names
+        const rankingData = [];
+        for (let uid in userScoresMap) {
+            const userDoc = await db.collection("User").doc(uid).get();
+            const name = userDoc.exists ? userDoc.data().Name : uid;
+            rankingData.push({
+                uid: uid,
+                name: name,
+                totalPoints: userScoresMap[uid].totalPoints,
+                matches: userScoresMap[uid].matches
+            });
+        }
 
-        sorted.forEach((entry, index) => {
-            const [uid, stats] = entry;
+        rankingData.sort((a, b) => b.totalPoints - a.totalPoints);
+
+        tbody.innerHTML = "";
+        rankingData.forEach((entry, index) => {
             const tr = document.createElement("tr");
             tr.className = "rank-row";
             tr.innerHTML = `
                 <td>${index + 1}</td>
-                <td>${stats.name}</td>
-                <td>${stats.total}</td>
-                <td>${stats.total * 3}</td>
+                <td>${entry.name}</td>
+                <td><strong>${entry.totalPoints}</strong></td>
+                <td><button onclick="showUserDetails('${entry.uid}', '${entry.name}', ${JSON.stringify(entry.matches).replace(/"/g, '&quot;')})">顯示詳情</button></td>
             `;
             tbody.appendChild(tr);
         });
 
-        if (sorted.length === 0) {
+        if (rankingData.length === 0) {
             tbody.innerHTML = "<tr><td colspan='4'>暫無排名資料</td></tr>";
         }
+    }
+
+    function calculatePoints(match, ums) {
+        const m1 = parseInt(match.Score1 || 0);
+        const m2 = parseInt(match.Score2 || 0);
+        const u1 = parseInt(ums.UserMatchScore1 || 0);
+        const u2 = parseInt(ums.UserMatchScore2 || 0);
+
+        if (m1 === u1 && m2 === u2) return 3;
+        if (m1 > m2 && u1 > u2) return 1;
+        if (m1 === m2 && u1 === u2) return 1;
+        if (m1 < m2 && u1 < u2) return 1;
+        return 0;
+    }
+
+    function showUserDetails(uid, name, matchesJson) {
+        const matches = JSON.parse(matchesJson);
+        document.getElementById("modalUserName").textContent = `${name} 的預測詳情`;
+
+        let html = `<table style="width:100%"><thead><tr><th>比賽</th><th>你的預測</th><th>實際賽果</th><th>得分</th></tr></thead><tbody>`;
+        
+        matches.forEach(m => {
+            const matchInfo = allMatchesCache[m.MatchCd] || { Team1: "?", Team2: "?" };
+            html += `
+                <tr>
+                    <td>${matchInfo.Team1} vs ${matchInfo.Team2}</td>
+                    <td>${m.UserMatchScore1} - ${m.UserMatchScore2}</td>
+                    <td>${matchInfo.Score1 || 0} - ${matchInfo.Score2 || 0}</td>
+                    <td><strong>${m.points}</strong></td>
+                </tr>
+            `;
+        });
+        html += `</tbody></table>`;
+
+        document.getElementById("modalMatchesList").innerHTML = html;
+        document.getElementById("detailsModal").style.display = "flex";
+    }
+
+    function closeModal() {
+        document.getElementById("detailsModal").style.display = "none";
     }
 
     // ==================== Admin Maintenance ====================
@@ -372,6 +461,8 @@
 
         matchSnapshot.forEach(doc => {
             const match = doc.data();
+            allMatchesCache[doc.id] = match; // cache for ranking
+
             const row = document.createElement("div");
             row.className = "match-row";
             row.innerHTML = `
@@ -391,7 +482,6 @@
                     <option value="Y">Y</option>
                 </select>
             `;
-            // Pre-fill current values
             row.querySelector('[data-field="Score1"]').value = match.Score1 || 0;
             row.querySelector('[data-field="Score2"]').value = match.Score2 || 0;
             row.querySelector('[data-field="IsScoreConfirmed"]').value = match.IsScoreConfirmed || "N";
