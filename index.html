@@ -3,99 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Winning Fantasy - World Cup 2026</title>
+    <title>Winning Fantasy - World Cup Predictor</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #f5f5f7; color: #333; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .hidden { display: none !important; }
-        .auth-box, .register-box { text-align: center; padding: 40px 20px; }
-        button { background: #0071e3; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            padding: 20px; 
+            background: #f5f5f7; 
+            color: #333; 
+            margin: 0;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        }
+        button { 
+            background: #0071e3; 
+            color: white; 
+            border: none; 
+            padding: 12px 24px; 
+            font-size: 16px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: background 0.2s; 
+        }
         button:hover { background: #0077ed; }
-        input[type="text"], select { padding: 10px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; margin: 10px 0; width: 100%; box-sizing: border-box; }
-        
-        /* Header & Tabs */
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e5e7; padding-bottom: 15px; margin-bottom: 20px; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { background: #e5e5e7; color: #333; padding: 10px 20px; border-radius: 6px; font-weight: 500; cursor: pointer; }
-        .tab-btn.active { background: #0071e3; color: white; }
-        
-        /* Match Row Styling */
-        .match-card { background: #fafafa; border: 1px solid #e5e5e7; border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .match-info { flex: 1; min-width: 250px; }
-        .match-date { font-size: 12px; color: #86868b; margin-top: 4px; }
-        .score-selectors { display: flex; align-items: center; gap: 8px; }
-        .score-select { width: 60px !important; text-align: center; }
-        
-        /* Rankings Table */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e5e5e7; }
-        th { background: #f5f5f7; }
+        button:disabled { background: #a2a2a2; cursor: not-allowed; }
+        .nav-tabs {
+            display: flex;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 600;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            color: #0071e3;
+            border-bottom: 3px solid #0071e3;
+        }
+        select, input {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        .match-row {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            gap: 20px;
+        }
+        .match-info {
+            flex: 1;
+        }
+        .score-inputs {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .score-inputs select {
+            width: 70px;
+        }
+        .ranking-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .ranking-table th, .ranking-table td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        .ranking-table th {
+            background: #f8f8f8;
+        }
+        #log { 
+            margin-top: 20px; 
+            padding: 15px; 
+            background: #1d1d1f; 
+            color: #00ff66; 
+            font-family: monospace; 
+            border-radius: 6px; 
+            max-height: 200px; 
+            overflow-y: auto; 
+            font-size: 13px; 
+            white-space: pre-wrap; 
+            display: none;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="authSection" class="auth-box">
-        <h2>Welcome to Winning Fantasy</h2>
-        <p>Please log in with your Google Account to check matches and make predictions.</p>
-        <button id="loginBtn">Sign In with Google</button>
+    <div class="header">
+        <h2>🏆 Winning Fantasy - World Cup 2026 Predictor</h2>
+        <div id="userSection" class="user-info"></div>
     </div>
 
-    <div id="registerSection" class="register-box hidden">
-        <h2>Complete Your Registration</h2>
-        <p>We couldn't find your profile code. Please choose your desired display name:</p>
-        <input type="text" id="desiredName" placeholder="Enter your display name (e.g., JohnDoe)">
-        <button id="saveProfileBtn">Submit & Complete Registration</button>
+    <!-- Login Screen -->
+    <div id="loginScreen">
+        <h3>Welcome! Please sign in with Google to continue.</h3>
+        <button id="googleLoginBtn">Sign in with Google</button>
+        <div id="loginLog" style="margin-top: 20px; color: #666;"></div>
     </div>
 
-    <div id="dashboardSection" class="hidden">
-        <div class="header">
-            <div>
-                <span id="welcomeTxt" style="font-weight: 600;"></span> 
-                <span id="userCdTxt" style="font-size: 13px; color: #666;"></span>
-            </div>
-            <button id="logoutBtn" style="background: #ff3b30; padding: 8px 16px; font-size: 14px;">Logout</button>
+    <!-- Main App -->
+    <div id="mainApp" style="display: none;">
+        <div>
+            <label for="eventSelect">Select Event: </label>
+            <select id="eventSelect" style="margin-bottom: 20px;"></select>
         </div>
 
-        <label for="eventSelector" style="font-weight: 600;">Select Event:</label>
-        <select id="eventSelector"></select>
-
-        <div class="tabs">
-            <div id="tab1Btn" class="tab-btn active">估波膽 (Predict Scores)</div>
-            <div id="tab2Btn" class="tab-btn">排名 (Rankings Report)</div>
+        <div class="nav-tabs">
+            <div id="tabPredict" class="tab active">估波膽</div>
+            <div id="tabRanking" class="tab">排名</div>
         </div>
 
-        <div id="tab1Content">
-            <h3>Match Predictions Form</h3>
-            <p style="font-size: 13px; color: #86868b; margin-bottom: 15px;">Showing matches that have already kicked off or passed (Match Date &lt; Current Time).</p>
-            <form id="predictionForm">
-                <div id="matchesContainer"></div>
-                <button type="submit" id="submitPredictionsBtn" style="margin-top: 15px;">Save All Predictions</button>
+        <!-- Predict Tab -->
+        <div id="predictTab">
+            <form id="predictForm">
+                <div id="matchesList"></div>
+                <button type="submit" style="margin-top: 20px; width: 100%;">Submit Predictions</button>
             </form>
         </div>
 
-        <div id="tab2Content" class="hidden">
-            <h3>User Match Scores Matrix</h3>
-            <div style="overflow-x: auto;">
-                <table id="rankingTable">
-                    <thead>
-                        <tr>
-                            <th>User (UserCd)</th>
-                            <th>Match Code</th>
-                            <th>Prediction</th>
-                        </tr>
-                    </thead>
-                    <tbody id="rankingTableBody"></tbody>
-                </table>
-            </div>
+        <!-- Ranking Tab -->
+        <div id="rankingTab" style="display: none;">
+            <h3>Current Rankings for Selected Event</h3>
+            <div id="rankingContent"></div>
         </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+        getAuth, 
+        GoogleAuthProvider, 
+        signInWithPopup, 
+        onAuthStateChanged, 
+        signOut 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+        getFirestore, 
+        doc, 
+        setDoc, 
+        getDoc, 
+        getDocs, 
+        collection, 
+        query, 
+        where, 
+        updateDoc 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // Firebase Configuration
     const firebaseConfig = {
@@ -106,20 +184,332 @@
         messagingSenderId: "1030044797745",
     };
 
-    // Initialize Services
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
     const auth = getAuth(app);
+    const db = getFirestore(app);
     const provider = new GoogleAuthProvider();
 
-    // DOM Elements
-    const authSection = document.getElementById('authSection');
-    const registerSection = document.getElementById('registerSection');
-    const dashboardSection = document.getElementById('dashboardSection');
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const desiredNameInput = document.getElementById('desiredName');
-    const saveProfileBtn = document.getElementById('saveProfileBtn');
-    const welcomeTxt = document.getElementById('welcomeTxt');
-    const userCdTxt = document.getElementById('userCdTxt');
-    const
+    let currentUser = null;
+    let currentEventCd = null;
+
+    const logEl = document.createElement('div');
+    logEl.id = 'log';
+    document.body.appendChild(logEl); // for debugging
+
+    function log(message) {
+        console.log(message);
+        if (logEl) {
+            logEl.innerHTML += message + "\n";
+            logEl.style.display = 'block';
+        }
+    }
+
+    // Helper to format date
+    function formatDate(dtStr) {
+        return new Date(dtStr).toLocaleString('zh-TW', { 
+            year: 'numeric', month: '2-digit', day: '2-digit', 
+            hour: '2-digit', minute: '2-digit' 
+        });
+    }
+
+    async function checkUserProfile(uid, email, displayName) {
+        const userRef = doc(db, "User", uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+            // Prompt for name
+            const desiredName = prompt(`Welcome! Please enter your desired display name:`, displayName || email.split('@')[0]);
+            if (!desiredName) return null;
+            
+            const userData = {
+                Cd: uid,
+                Name: desiredName,
+                Email: email,
+                IsAdmin: "N"
+            };
+            await setDoc(userRef, userData);
+            log(`New user profile created for ${desiredName}`);
+            return userData;
+        }
+        return userSnap.data();
+    }
+
+    async function loadEvents() {
+        const eventsRef = collection(db, "Event");
+        const q = query(eventsRef, where("isActive", "==", "Y"));
+        const snapshot = await getDocs(q);
+        
+        const select = document.getElementById('eventSelect');
+        select.innerHTML = '';
+        
+        snapshot.forEach(doc => {
+            const event = doc.data();
+            const option = document.createElement('option');
+            option.value = event.Cd;
+            option.textContent = event.Name;
+            select.appendChild(option);
+        });
+        
+        if (snapshot.size > 0) {
+            currentEventCd = select.value;
+            select.addEventListener('change', () => {
+                currentEventCd = select.value;
+                loadCurrentTab();
+            });
+        }
+    }
+
+    async function loadMatchesForPrediction(eventCd) {
+        const matchesRef = collection(db, "Match");
+        const q = query(matchesRef, where("EventCd", "==", eventCd));
+        const snapshot = await getDocs(q);
+        
+        const now = new Date();
+        const matchesList = document.getElementById('matchesList');
+        matchesList.innerHTML = '';
+        
+        let hasMatches = false;
+        
+        snapshot.forEach(docSnap => {
+            const match = docSnap.data();
+            const matchDt = new Date(match.Dt);
+            
+            // Only show matches where Dt is earlier than current time (past/ongoing?)
+            if (matchDt < now) {
+                hasMatches = true;
+                
+                const row = document.createElement('div');
+                row.className = 'match-row';
+                row.innerHTML = `
+                    <div class="match-info">
+                        <strong>${match.Name}</strong><br>
+                        <small>${match.Team1} vs ${match.Team2}</small><br>
+                        <small>${formatDate(match.Dt)}</small>
+                    </div>
+                    <div class="score-inputs">
+                        <select name="score1_${match.Cd}" data-match="${match.Cd}">
+                            ${Array.from({length: 11}, (_, i) => `<option value="${i}">${i}</option>`).join('')}
+                        </select>
+                        <span> - </span>
+                        <select name="score2_${match.Cd}" data-match="${match.Cd}">
+                            ${Array.from({length: 11}, (_, i) => `<option value="${i}">${i}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+                matchesList.appendChild(row);
+            }
+        });
+        
+        if (!hasMatches) {
+            matchesList.innerHTML = '<p>No matches available for prediction at this time.</p>';
+        }
+        
+        // Load existing predictions
+        if (currentUser) {
+            const umsRef = collection(db, "UserMatchScore");
+            const umsQ = query(umsRef, 
+                where("UserCd", "==", currentUser.Cd),
+                where("MatchCd", "in", Array.from(snapshot.docs.map(d => d.id)).filter(m => {
+                    // This is simplified, better to load individually but for demo
+                }))
+            );
+            // For simplicity, load per match later or adjust
+            // In production, load all user's predictions for this event
+        }
+    }
+
+    async function loadUserPredictions() {
+        if (!currentUser || !currentEventCd) return;
+        
+        const umsRef = collection(db, "UserMatchScore");
+        const q = query(umsRef, where("UserCd", "==", currentUser.Cd));
+        const snapshot = await getDocs(q);
+        
+        const predictions = {};
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            predictions[data.MatchCd] = { score1: data.Score1, score2: data.Score2 };
+        });
+        
+        // Set values in form
+        document.querySelectorAll('select[data-match]').forEach(select => {
+            const matchCd = select.dataset.match;
+            const isScore1 = select.name.startsWith('score1');
+            if (predictions[matchCd]) {
+                select.value = isScore1 ? predictions[matchCd].score1 : predictions[matchCd].score2;
+            }
+        });
+    }
+
+    async function savePredictions(event) {
+        event.preventDefault();
+        
+        if (!currentUser) return;
+        
+        const selects = document.querySelectorAll('#matchesList select');
+        let updatedCount = 0;
+        
+        for (const select of selects) {
+            const matchCd = select.dataset.match;
+            const isScore1 = select.name.startsWith('score1_');
+            if (!isScore1) continue; // process pairs
+            
+            const score1Select = document.querySelector(`select[name="score1_${matchCd}"]`);
+            const score2Select = document.querySelector(`select[name="score2_${matchCd}"]`);
+            
+            if (score1Select && score2Select) {
+                const score1 = parseInt(score1Select.value);
+                const score2 = parseInt(score2Select.value);
+                
+                const docId = `${currentUser.Cd}-${matchCd}`;
+                const umsRef = doc(db, "UserMatchScore", docId);
+                
+                await setDoc(umsRef, {
+                    UserCd: currentUser.Cd,
+                    MatchCd: matchCd,
+                    Score1: score1,
+                    Score2: score2
+                }, { merge: true });
+                
+                updatedCount++;
+            }
+        }
+        
+        alert(`Successfully updated ${updatedCount} match predictions!`);
+        loadCurrentTab();
+    }
+
+    async function loadRanking(eventCd) {
+        const content = document.getElementById('rankingContent');
+        content.innerHTML = '<p>Loading rankings...</p>';
+        
+        // Get all UserMatchScores for this event's matches
+        const matchesRef = collection(db, "Match");
+        const matchQ = query(matchesRef, where("EventCd", "==", eventCd));
+        const matchSnap = await getDocs(matchQ);
+        const matchCds = matchSnap.docs.map(d => d.id);
+        
+        const umsRef = collection(db, "UserMatchScore");
+        const umsQ = query(umsRef, where("MatchCd", "in", matchCds.slice(0, 10))); // limit for Firestore 'in'
+        
+        const umsSnap = await getDocs(umsQ);
+        
+        // Group by user
+        const userScores = {};
+        
+        umsSnap.forEach(doc => {
+            const data = doc.data();
+            if (!userScores[data.UserCd]) {
+                userScores[data.UserCd] = { name: data.UserCd, total: 0, matches: 0 };
+            }
+            // Simple scoring: exact score = 3pts, correct winner = 1pt, etc. For now placeholder
+            userScores[data.UserCd].matches++;
+            // Placeholder total
+        });
+        
+        // Fetch user names
+        let html = `<table class="ranking-table">
+            <thead><tr><th>Rank</th><th>Player</th><th>Matches Predicted</th><th>Points</th></tr></thead>
+            <tbody>`;
+        
+        Object.values(userScores).sort((a,b) => b.matches - a.matches).forEach((user, idx) => {
+            html += `<tr>
+                <td>${idx+1}</td>
+                <td>${user.name}</td>
+                <td>${user.matches}</td>
+                <td>${user.total || 'TBD'}</td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table>';
+        content.innerHTML = html || '<p>No predictions submitted yet for this event.</p>';
+    }
+
+    function loadCurrentTab() {
+        const activeTab = document.querySelector('.tab.active').id === 'tabPredict' ? 'predict' : 'ranking';
+        
+        if (activeTab === 'predict') {
+            document.getElementById('predictTab').style.display = 'block';
+            document.getElementById('rankingTab').style.display = 'none';
+            loadMatchesForPrediction(currentEventCd).then(() => {
+                loadUserPredictions();
+            });
+        } else {
+            document.getElementById('predictTab').style.display = 'none';
+            document.getElementById('rankingTab').style.display = 'block';
+            loadRanking(currentEventCd);
+        }
+    }
+
+    // Tab switching
+    function setupTabs() {
+        const predictTab = document.getElementById('tabPredict');
+        const rankingTab = document.getElementById('tabRanking');
+        
+        predictTab.addEventListener('click', () => {
+            predictTab.classList.add('active');
+            rankingTab.classList.remove('active');
+            loadCurrentTab();
+        });
+        
+        rankingTab.addEventListener('click', () => {
+            rankingTab.classList.add('active');
+            predictTab.classList.remove('active');
+            loadCurrentTab();
+        });
+    }
+
+    // Auth state listener
+    onAuthStateChanged(auth, async (user) => {
+        const loginScreen = document.getElementById('loginScreen');
+        const mainApp = document.getElementById('mainApp');
+        const userSection = document.getElementById('userSection');
+        
+        if (user) {
+            currentUser = await checkUserProfile(user.uid, user.email, user.displayName);
+            
+            if (currentUser) {
+                loginScreen.style.display = 'none';
+                mainApp.style.display = 'block';
+                
+                userSection.innerHTML = `
+                    Hello, ${currentUser.Name} 
+                    <button onclick="logout()" style="padding: 6px 12px; font-size: 14px;">Logout</button>
+                `;
+                
+                await loadEvents();
+                setupTabs();
+                loadCurrentTab();
+            }
+        } else {
+            loginScreen.style.display = 'block';
+            mainApp.style.display = 'none';
+            userSection.innerHTML = '';
+        }
+    });
+
+    // Google Login
+    document.getElementById('googleLoginBtn').addEventListener('click', async () => {
+        try {
+            const result = await signInWithPopup(auth, provider);
+            // Handled by onAuthStateChanged
+        } catch (error) {
+            console.error("Login error:", error);
+            alert("Login failed: " + error.message);
+        }
+    });
+
+    window.logout = async function() {
+        try {
+            await signOut(auth);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    // Form submit
+    document.getElementById('predictForm').addEventListener('submit', savePredictions);
+</script>
+
+</body>
+</html>
