@@ -154,7 +154,8 @@
         let userCd = currentUser.email ? currentUser.email.split('@')[0] : currentUser.uid;
 
         const userRef = db.collection("User").doc(userCd);
-        const docSnap = await userRef.get();
+        //const docSnap = await userRef.get();
+        const docSnap = userRef.get();
 
         if (!docSnap.exists) {
             const name = prompt("請輸入您的顯示名稱 (Name):", currentUser.displayName || "球迷");
