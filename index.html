@@ -26,7 +26,7 @@
         button:hover { background: #0060c0; }
         button.admin-only { background: #d32f2f; }
         .match-row { 
-            display: grid; grid-template-columns: 1fr 60px 1px 60px 1px; gap: 1px; 
+            display: grid; grid-template-columns: 1fr 70px 1px 70px 1px; gap: 1px; 
             align-items: center; padding: 6px; border-bottom: 1px solid #eee; 
         }
         .match-info { font-size: 18px; }
@@ -270,7 +270,7 @@
             row.className = "match-row";
             row.innerHTML = `
                 <div class="match-info">
-                    <strong>[${match.Cd}] ${match.Name}</strong><br>
+                    <small>[${match.Cd}] ${match.Name}<small><br>
                     <strong>${match.Team1} vs ${match.Team2}</strong><br>
                     <small>${formatMatchDate(match.Dt)}</small>
                 </div>
@@ -457,7 +457,7 @@
             row.className = "match-row";
             row.innerHTML = `
                 <div class="match-info">
-                    <strong>[${match.Cd}] ${match.Name}</strong><br>
+                    <small>[${match.Cd}] ${match.Name}<small><br>
                     <strong>${match.Team1} vs ${match.Team2}</strong><br>
                     <small>${formatMatchDate(match.Dt)}</small>
                 </div>
