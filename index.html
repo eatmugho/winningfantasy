@@ -13,7 +13,7 @@
             margin: 0; padding: 0; background: #f5f5f7; color: #333; 
         }
         .container { 
-            max-width: 900px; margin: 20px auto; background: white; 
+            max-width: 1000px; margin: 20px auto; background: white; 
             border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden;
         }
         header { background: #0071e3; color: white; padding: 20px; text-align: center; }
@@ -24,6 +24,7 @@
         select, button, input { padding: 10px; margin: 5px 0; border-radius: 8px; }
         button { background: #0071e3; color: white; border: none; cursor: pointer; font-weight: 600; }
         button:hover { background: #0060c0; }
+        button.admin-only { background: #d32f2f; }
         .match-row { 
             display: grid; grid-template-columns: 1fr 80px 40px 80px; gap: 10px; 
             align-items: center; padding: 12px; border-bottom: 1px solid #eee; 
@@ -34,6 +35,7 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
         .rank-row { background: #f9f9f9; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -64,12 +66,13 @@
         <div class="tabs">
             <div class="tab active" id="tab1" onclick="switchTab(1)">估波膽</div>
             <div class="tab" id="tab2" onclick="switchTab(2)">排名</div>
+            <div class="tab hidden" id="tab3" onclick="switchTab(3)">維護</div>
         </div>
 
         <!-- 估波膽 Tab -->
         <div id="tabContent1" class="content">
             <div id="matchesList"></div>
-            <button onclick="submitPredictions()" style="width: 100%; margin-top: 20px; padding: 15px;">提交所有預測</button>
+            <button onclick="submitUserPredictions()" style="width: 100%; margin-top: 20px; padding: 15px;">提交所有預測</button>
         </div>
 
         <!-- 排名 Tab -->
@@ -80,12 +83,21 @@
                     <tr>
                         <th>排名</th>
                         <th>用戶</th>
-                        <th>正確比分</th>
+                        <th>已預測</th>
                         <th>總分</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
             </table>
+        </div>
+
+        <!-- 維護 Tab (Admin Only) -->
+        <div id="tabContent3" class="content" style="display: none;">
+            <h3>賽果維護 (管理員專用)</h3>
+            <div id="adminMatchesList"></div>
+            <button onclick="submitMatchResults()" style="width: 100%; margin-top: 20px; padding: 15px; background: #d32f2f;">
+                更新賽果
+            </button>
         </div>
     </div>
 </div>
@@ -100,7 +112,6 @@
         messagingSenderId: "1030044797745",
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
@@ -108,7 +119,7 @@
     let currentUser = null;
     let currentEventCd = null;
     let matchesData = [];
-    let userScores = {};
+    let isAdmin = false;
 
     // ==================== Auth ====================
     async function signInWithGoogle() {
@@ -135,9 +146,14 @@
                 Cd: currentUser.uid,
                 Name: name,
                 IsAdmin: "N",
-                Email: currentUser.email
+                Email: currentUser.email,
+                UpdateDt: new Date().toISOString()
             });
             alert("註冊成功！歡迎 " + name);
+        } else {
+            const userData = docSnap.data();
+            isAdmin = userData.IsAdmin === "Y";
+            if (isAdmin) document.getElementById("tab3").classList.remove("hidden");
         }
 
         document.getElementById("loginScreen").style.display = "none";
@@ -178,18 +194,19 @@
         
         document.getElementById("tabContent1").style.display = tab === 1 ? "block" : "none";
         document.getElementById("tabContent2").style.display = tab === 2 ? "block" : "none";
+        document.getElementById("tabContent3").style.display = tab === 3 ? "block" : "none";
         
         if (tab === 2) loadRanking();
+        if (tab === 3) loadAdminMatches();
     }
 
-    // ==================== Load Matches for Event (Future Matches Only) ====================
+    // ==================== Load Future Matches ====================
     async function loadEventData() {
         currentEventCd = document.getElementById("eventSelect").value;
         if (!currentEventCd) return;
 
         const now = new Date();
 
-        // Load Matches - Only show FUTURE matches (Dt > now)
         const matchSnapshot = await db.collection("Match")
             .where("EventCd", "==", currentEventCd)
             .orderBy("Dt")
@@ -198,15 +215,15 @@
         matchesData = [];
         matchSnapshot.forEach(doc => {
             const match = doc.data();
-            if (new Date(match.Dt) > now) {   // ← Changed to future matches
+            if (new Date(match.Dt) > now) {
                 matchesData.push({ id: doc.id, ...match });
             }
         });
 
-        renderMatches();
+        renderUserMatches();
     }
 
-    function renderMatches() {
+    function renderUserMatches() {
         const container = document.getElementById("matchesList");
         container.innerHTML = `<h3>${document.getElementById("eventSelect").options[document.getElementById("eventSelect").selectedIndex].text}</h3>`;
 
@@ -223,11 +240,11 @@
                     <strong>${match.Team1} vs ${match.Team2}</strong><br>
                     <small>${new Date(match.Dt).toLocaleString('zh-HK')}</small>
                 </div>
-                <select class="score-select" data-match="${match.id}" data-field="Score1">
+                <select class="score-select" data-match="${match.id}" data-field="UserMatchScore1">
                     ${Array.from({length:11}, (_,i) => `<option value="${i}">${i}</option>`).join('')}
                 </select>
                 <div style="text-align:center; font-weight:bold;">:</div>
-                <select class="score-select" data-match="${match.id}" data-field="Score2">
+                <select class="score-select" data-match="${match.id}" data-field="UserMatchScore2">
                     ${Array.from({length:11}, (_,i) => `<option value="${i}">${i}</option>`).join('')}
                 </select>
             `;
@@ -238,7 +255,7 @@
     }
 
     async function loadUserPredictions() {
-        if (!currentUser || !currentEventCd) return;
+        if (!currentUser) return;
 
         const snapshot = await db.collection("UserMatchScore")
             .where("UserCd", "==", currentUser.uid)
@@ -252,17 +269,17 @@
                 const parent = row.parentElement;
                 const selects = parent.querySelectorAll('select');
                 selects.forEach(select => {
-                    if (select.dataset.field === "Score1") select.value = data.Score1 || 0;
-                    if (select.dataset.field === "Score2") select.value = data.Score2 || 0;
+                    if (select.dataset.field === "UserMatchScore1") select.value = data.UserMatchScore1 || 0;
+                    if (select.dataset.field === "UserMatchScore2") select.value = data.UserMatchScore2 || 0;
                 });
             }
         });
     }
 
-    async function submitPredictions() {
+    async function submitUserPredictions() {
         if (!currentUser) return alert("請先登入");
 
-        const selects = document.querySelectorAll('.score-select');
+        const selects = document.querySelectorAll('#tabContent1 .score-select');
         let batch = db.batch();
         let count = 0;
 
@@ -279,8 +296,9 @@
             batch.set(ref, {
                 UserCd: currentUser.uid,
                 MatchCd: matchCd,
-                Score1: score1,
-                Score2: score2
+                UserMatchScore1: score1,
+                UserMatchScore2: score2,
+                UpdateDt: new Date().toISOString()
             }, { merge: true });
             count++;
         }
@@ -306,12 +324,11 @@
         snapshot.forEach(doc => {
             const data = doc.data();
             if (!userStats[data.UserCd]) {
-                userStats[data.UserCd] = { correct: 0, total: 0, name: "未知用戶" };
+                userStats[data.UserCd] = { total: 0, name: "未知用戶" };
             }
             userStats[data.UserCd].total++;
         });
 
-        // Get user names
         for (let uid of Object.keys(userStats)) {
             const userDoc = await db.collection("User").doc(uid).get();
             if (userDoc.exists) userStats[uid].name = userDoc.data().Name;
@@ -327,7 +344,7 @@
             tr.innerHTML = `
                 <td>${index + 1}</td>
                 <td>${stats.name}</td>
-                <td>${stats.correct} / ${stats.total}</td>
+                <td>${stats.total}</td>
                 <td>${stats.total * 3}</td>
             `;
             tbody.appendChild(tr);
@@ -336,6 +353,83 @@
         if (sorted.length === 0) {
             tbody.innerHTML = "<tr><td colspan='4'>暫無排名資料</td></tr>";
         }
+    }
+
+    // ==================== Admin Maintenance ====================
+    async function loadAdminMatches() {
+        if (!isAdmin) return;
+
+        const container = document.getElementById("adminMatchesList");
+        container.innerHTML = `<h3>${document.getElementById("eventSelect").options[document.getElementById("eventSelect").selectedIndex].text} - 賽果維護</h3>`;
+
+        const now = new Date();
+        const matchSnapshot = await db.collection("Match")
+            .where("EventCd", "==", currentEventCd)
+            .orderBy("Dt")
+            .get();
+
+        let adminMatches = [];
+        matchSnapshot.forEach(doc => {
+            const match = doc.data();
+            adminMatches.push({ id: doc.id, ...match });
+        });
+
+        if (adminMatches.length === 0) {
+            container.innerHTML += "<p>無賽事資料。</p>";
+            return;
+        }
+
+        adminMatches.forEach(match => {
+            const row = document.createElement("div");
+            row.className = "match-row";
+            row.innerHTML = `
+                <div class="match-info">
+                    <strong>${match.Team1} vs ${match.Team2}</strong><br>
+                    <small>${new Date(match.Dt).toLocaleString('zh-HK')}</small>
+                </div>
+                <select class="score-select" data-match="${match.id}" data-field="Score1">
+                    ${Array.from({length:11}, (_,i) => `<option value="${i}">${i}</option>`).join('')}
+                </select>
+                <div style="text-align:center; font-weight:bold;">:</div>
+                <select class="score-select" data-match="${match.id}" data-field="Score2">
+                    ${Array.from({length:11}, (_,i) => `<option value="${i}">${i}</option>`).join('')}
+                </select>
+            `;
+            // Load current score
+            const s1 = row.querySelector('[data-field="Score1"]');
+            const s2 = row.querySelector('[data-field="Score2"]');
+            s1.value = match.Score1 || 0;
+            s2.value = match.Score2 || 0;
+            container.appendChild(row);
+        });
+    }
+
+    async function submitMatchResults() {
+        if (!isAdmin) return alert("只有管理員可以更新賽果");
+
+        const selects = document.querySelectorAll('#tabContent3 .score-select');
+        let batch = db.batch();
+        let count = 0;
+
+        for (let i = 0; i < selects.length; i += 2) {
+            const score1Select = selects[i];
+            const matchCd = score1Select.dataset.match;
+            const score1 = parseInt(score1Select.value);
+            const score2Select = selects[i+1];
+            const score2 = parseInt(score2Select.value);
+
+            const ref = db.collection("Match").doc(matchCd);
+            batch.update(ref, {
+                Score1: score1,
+                Score2: score2,
+                IsScoreConfirmed: "Y",
+                UpdateDt: new Date().toISOString()
+            });
+            count++;
+        }
+
+        await batch.commit();
+        alert(`✅ 已更新 ${count} 場賽果！`);
     }
 
     // ==================== Auth State Listener ====================
