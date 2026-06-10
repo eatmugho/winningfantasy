@@ -270,7 +270,7 @@
             row.className = "match-row";
             row.innerHTML = `
                 <div class="match-info">
-                    <strong>${match.Cd} - ${match.Name}</strong><br>
+                    <strong>[${match.Cd}] ${match.Name} ${match.Team1} vs ${match.Team2}</strong><br>
                     <small>${formatMatchDate(match.Dt)}</small>
                 </div>
                 <select class="score-select" data-match="${match.id}" data-field="UserMatchScore1">
