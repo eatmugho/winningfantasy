@@ -5,110 +5,121 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Winning Fantasy - World Cup 2026</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #f5f5f7; color: #333; margin: 0; }
-        .container { max-width: 900px; margin: 20px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #f5f5f7; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .hidden { display: none !important; }
-        
-        /* Auth Styles */
-        .auth-box { text-align: center; padding: 40px 20px; }
-        button { background: #0071e3; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
+        .auth-box, .register-box { text-align: center; padding: 40px 20px; }
+        button { background: #0071e3; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: 600; }
         button:hover { background: #0077ed; }
-        input[type="text"] { padding: 10px; width: 100%; max-width: 300px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; box-sizing: border-box; }
+        input[type="text"], select { padding: 10px; font-size: 16px; border-radius: 6px; border: 1px solid #ccc; margin: 10px 0; width: 100%; box-sizing: border-box; }
         
-        /* Layout Styles */
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e5ea; padding-bottom: 15px; margin-bottom: 20px; }
-        .user-info { font-size: 14px; color: #666; }
-        .logout-btn { background: #ff3b30; padding: 6px 12px; font-size: 14px; margin-left: 10px; }
-        .logout-btn:hover { background: #ff453a; }
-
-        /* Tabs */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e5e5ea; }
-        .tab { padding: 10px 20px; cursor: pointer; font-weight: 600; color: #86868b; border-bottom: 2px solid transparent; margin-bottom: -2px; }
-        .tab.active { color: #0071e3; border-bottom-color: #0071e3; }
-
-        /* Tables & Forms */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; font-size: 14px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e5ea; }
-        th { background: #f5f5f7; font-weight: 600; }
-        select { padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px; }
-        .submit-container { margin-top: 20px; text-align: right; }
+        /* Header & Tabs */
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e5e7; padding-bottom: 15px; margin-bottom: 20px; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { background: #e5e5e7; color: #333; padding: 10px 20px; border-radius: 6px; font-weight: 500; cursor: pointer; }
+        .tab-btn.active { background: #0071e3; color: white; }
         
-        /* Loading Spinner */
-        .spinner { font-size: 16px; color: #666; text-align: center; padding: 20px; }
+        /* Match Row Styling */
+        .match-card { background: #fafafa; border: 1px solid #e5e5e7; border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .match-info { flex: 1; min-width: 250px; }
+        .match-date { font-size: 12px; color: #86868b; margin-top: 4px; }
+        .score-selectors { display: flex; align-items: center; gap: 8px; }
+        .score-select { width: 60px !important; text-align: center; }
+        
+        /* Rankings Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e5e5e7; }
+        th { background: #f5f5f7; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="loading-screen" class="spinner">Initializing application...</div>
-
-    <div id="auth-section" class="auth-box hidden">
+    <div id="authSection" class="auth-box">
         <h2>Welcome to Winning Fantasy</h2>
-        <p>Please log in using your Google account to participate.</p>
-        <button id="login-btn">Log In with Google</button>
+        <p>Please log in with your Google Account to check matches and make predictions.</p>
+        <button id="loginBtn">Sign In with Google</button>
     </div>
 
-    <div id="register-section" class="auth-box hidden">
+    <div id="registerSection" class="register-box hidden">
         <h2>Complete Your Registration</h2>
-        <p>We couldn't find your username in our roster. Please enter your desired display name:</p>
-        <input type="text" id="desire-name-input" placeholder="Enter display name..."><br>
-        <button id="register-btn">Save & Enter</button>
+        <p>We couldn't find your profile code. Please choose your desired display name:</p>
+        <input type="text" id="desiredName" placeholder="Enter your display name (e.g., JohnDoe)">
+        <button id="saveProfileBtn">Submit & Complete Registration</button>
     </div>
 
-    <div id="app-section" class="hidden">
+    <div id="dashboardSection" class="hidden">
         <div class="header">
-            <h2>🏆 Winning Fantasy 2026</h2>
-            <div class="user-info">
-                Welcome, <strong id="display-user-name">...</strong> (<span id="display-user-cd"></span>)
-                <button id="logout-btn" class="logout-btn">Logout</button>
+            <div>
+                <span id="welcomeTxt" style="font-weight: 600;"></span> 
+                <span id="userCdTxt" style="font-size: 13px; color: #666;"></span>
             </div>
+            <button id="logoutBtn" style="background: #ff3b30; padding: 8px 16px; font-size: 14px;">Logout</button>
         </div>
+
+        <label for="eventSelector" style="font-weight: 600;">Select Event:</label>
+        <select id="eventSelector"></select>
 
         <div class="tabs">
-            <div class="tab active" id="tab-predict" onclick="switchTab('predict')">估波膽 (Predict Scores)</div>
-            <div class="tab" id="tab-ranking" onclick="switchTab('ranking')">排名 (Rankings Report)</div>
+            <div id="tab1Btn" class="tab-btn active">估波膽 (Predict Scores)</div>
+            <div id="tab2Btn" class="tab-btn">排名 (Rankings Report)</div>
         </div>
 
-        <div id="content-predict" class="tab-content">
-            <h3>Your Match Predictions</h3>
-            <p>Select your projected scores and hit save at the bottom of the list.</p>
-            <form id="predictions-form">
-                <table id="predict-table">
-                    <thead>
-                        <tr>
-                            <th>Match Code</th>
-                            <th>Match Info</th>
-                            <th>Home Team</th>
-                            <th>Prediction</th>
-                            <th>Away Team</th>
-                        </tr>
-                    </thead>
-                    <tbody id="predict-tbody">
-                        </tbody>
-                </table>
-                <div class="submit-container">
-                    <button type="submit" id="save-predictions-btn">Save All Predictions</button>
-                </div>
+        <div id="tab1Content">
+            <h3>Match Predictions Form</h3>
+            <p style="font-size: 13px; color: #86868b; margin-bottom: 15px;">Showing matches that have already kicked off or passed (Match Date &lt; Current Time).</p>
+            <form id="predictionForm">
+                <div id="matchesContainer"></div>
+                <button type="submit" id="submitPredictionsBtn" style="margin-top: 15px;">Save All Predictions</button>
             </form>
         </div>
 
-        <div id="content-ranking" class="tab-content hidden">
-            <h3>Complete Database Report</h3>
-            <p>A full view of all score projections saved across the platform.</p>
-            <table id="ranking-table">
-                <thead>
-                    <tr>
-                        <th>User Code</th>
-                        <th>Match Code</th>
-                        <th>Prediction (Home - Away)</th>
-                    </tr>
-                </thead>
-                <tbody id="ranking-tbody">
-                    </tbody>
-            </table>
+        <div id="tab2Content" class="hidden">
+            <h3>User Match Scores Matrix</h3>
+            <div style="overflow-x: auto;">
+                <table id="rankingTable">
+                    <thead>
+                        <tr>
+                            <th>User (UserCd)</th>
+                            <th>Match Code</th>
+                            <th>Prediction</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rankingTableBody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
 <script type="module">
-    import { initializeApp } from "
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    // Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyBkvD9abm5J7mLPuEO8kt2mXQcKRshVv4M",
+        authDomain: "winningfantasy.firebaseapp.com",
+        projectId: "winningfantasy",
+        storageBucket: "winningfantasy.appspot.com",
+        messagingSenderId: "1030044797745",
+    };
+
+    // Initialize Services
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    // DOM Elements
+    const authSection = document.getElementById('authSection');
+    const registerSection = document.getElementById('registerSection');
+    const dashboardSection = document.getElementById('dashboardSection');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const desiredNameInput = document.getElementById('desiredName');
+    const saveProfileBtn = document.getElementById('saveProfileBtn');
+    const welcomeTxt = document.getElementById('welcomeTxt');
+    const userCdTxt = document.getElementById('userCdTxt');
+    const
