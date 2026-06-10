@@ -495,9 +495,12 @@
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
+            /*
             document.getElementById("loginScreen").style.display = "none";
             document.getElementById("mainApp").style.display = "block";
             document.getElementById("userNameDisplay").textContent = user.displayName || "用戶";
+            */
+            handleUserRegistration();
             loadActiveEvents();
         } else {
             document.getElementById("loginScreen").style.display = "block";
