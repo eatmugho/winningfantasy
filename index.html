@@ -18,10 +18,10 @@
         }
         header { background: #0071e3; color: white; padding: 20px; text-align: center; }
         .tabs { display: flex; border-bottom: 1px solid #ddd; }
-        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-weight: 600; }
+        .tab { font-size: 24px; flex: 1; padding: 15px; text-align: center; cursor: pointer; font-weight: 600; }
         .tab.active { border-bottom: 3px solid #0071e3; color: #0071e3; }
         .content { padding: 20px; }
-        select, button, input { font-size: 18px; padding: 10px; margin: 5px 0; border-radius: 8px; }
+        select, button, input { font-size: 20px; padding: 10px; margin: 5px 0; border-radius: 8px; }
         button { background: #0071e3; color: white; border: none; cursor: pointer; font-weight: 600; }
         button:hover { background: #0060c0; }
         button.admin-only { background: #d32f2f; }
@@ -29,7 +29,7 @@
             display: grid; grid-template-columns: 1fr 80px 40px 80px 120px; gap: 10px; 
             align-items: center; padding: 12px; border-bottom: 1px solid #eee; 
         }
-        .match-info { font-size: 18px; }
+        .match-info { font-size: 20px; }
         .score-select { width: 70px; }
         .login-container { text-align: center; padding: 60px 20px; }
         table { width: 100%; border-collapse: collapse; }
@@ -49,13 +49,13 @@
 <div class="container">
     <header>
         <h1>Winning Fantasy (估波膽遊戲)</h1>
-        <p>請每場波開波前輸入你嘅心水賽果。 計分方法: 估中波膽3分, 估中主客和1分。</p>
+        <p>玩法: 請每場波開波前輸入你嘅心水賽果。 計分方法: 估中波膽3分, 估中主客和1分。</p>
     </header>
 
     <!-- Login Screen -->
     <div id="loginScreen" class="login-container">
         <h2>歡迎使用估波系統</h2>
-        <button onclick="signInWithGoogle()" style="padding: 15px 30px; font-size: 18px;">
+        <button onclick="signInWithGoogle()" style="padding: 15px 30px; font-size: 20px;">
             用 Google 帳戶登入
         </button>
     </div>
@@ -100,7 +100,7 @@
 
         <!-- 維護 Tab (Admin Only) -->
         <div id="tabContent3" class="content" style="display: none;">
-            <h3>賽果維護 (管理員專用)</h3>
+            <h3>賽果維護</h3>
             <div id="adminMatchesList"></div>
             <button onclick="submitMatchResults()" style="width: 100%; margin-top: 20px; padding: 15px; background: #d32f2f;">
                 更新賽果
