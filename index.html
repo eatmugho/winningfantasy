@@ -26,7 +26,7 @@
         button:hover { background: #0060c0; }
         button.admin-only { background: #d32f2f; }
         .match-row { 
-            display: grid; grid-template-columns: 1fr 80px 40px 80px; gap: 10px; 
+            display: grid; grid-template-columns: 1fr 80px 40px 80px 120px; gap: 10px; 
             align-items: center; padding: 12px; border-bottom: 1px solid #eee; 
         }
         .match-info { font-size: 14px; }
@@ -135,7 +135,10 @@
     }
 
     async function handleUserRegistration() {
-        const userRef = db.collection("User").doc(currentUser.uid);
+        // Extract username from email (e.g. eatmugho@gmail.com -> eatmugho)
+        let userCd = currentUser.email ? currentUser.email.split('@')[0] : currentUser.uid;
+
+        const userRef = db.collection("User").doc(userCd);
         const docSnap = await userRef.get();
 
         if (!docSnap.exists) {
@@ -143,10 +146,9 @@
             if (!name) return;
 
             await userRef.set({
-                Cd: currentUser.uid,
+                Cd: userCd,
                 Name: name,
                 IsAdmin: "N",
-                Email: currentUser.email,
                 UpdateDt: new Date().toISOString()
             });
             alert("註冊成功！歡迎 " + name);
@@ -200,7 +202,7 @@
         if (tab === 3) loadAdminMatches();
     }
 
-    // ==================== Load Future Matches ====================
+    // ==================== Load Future Matches (User Prediction) ====================
     async function loadEventData() {
         currentEventCd = document.getElementById("eventSelect").value;
         if (!currentEventCd) return;
@@ -258,13 +260,13 @@
         if (!currentUser) return;
 
         const snapshot = await db.collection("UserMatchScore")
-            .where("UserCd", "==", currentUser.uid)
+            .where("UserCd", "==", currentUser.email ? currentUser.email.split('@')[0] : currentUser.uid)
             .get();
 
         snapshot.forEach(doc => {
             const data = doc.data();
             const matchCd = data.MatchCd;
-            const row = document.querySelector(`[data-match="${matchCd}"]`);
+            const row = document.querySelector(`#tabContent1 [data-match="${matchCd}"]`);
             if (row) {
                 const parent = row.parentElement;
                 const selects = parent.querySelectorAll('select');
@@ -279,6 +281,7 @@
     async function submitUserPredictions() {
         if (!currentUser) return alert("請先登入");
 
+        const userCd = currentUser.email ? currentUser.email.split('@')[0] : currentUser.uid;
         const selects = document.querySelectorAll('#tabContent1 .score-select');
         let batch = db.batch();
         let count = 0;
@@ -290,11 +293,11 @@
             const score2Select = selects[i+1];
             const score2 = parseInt(score2Select.value);
 
-            const docId = `${currentUser.uid}-${matchCd}`;
+            const docId = `${userCd}-${matchCd}`;
             const ref = db.collection("UserMatchScore").doc(docId);
 
             batch.set(ref, {
-                UserCd: currentUser.uid,
+                UserCd: userCd,
                 MatchCd: matchCd,
                 UserMatchScore1: score1,
                 UserMatchScore2: score2,
@@ -362,24 +365,13 @@
         const container = document.getElementById("adminMatchesList");
         container.innerHTML = `<h3>${document.getElementById("eventSelect").options[document.getElementById("eventSelect").selectedIndex].text} - 賽果維護</h3>`;
 
-        const now = new Date();
         const matchSnapshot = await db.collection("Match")
             .where("EventCd", "==", currentEventCd)
             .orderBy("Dt")
             .get();
 
-        let adminMatches = [];
         matchSnapshot.forEach(doc => {
             const match = doc.data();
-            adminMatches.push({ id: doc.id, ...match });
-        });
-
-        if (adminMatches.length === 0) {
-            container.innerHTML += "<p>無賽事資料。</p>";
-            return;
-        }
-
-        adminMatches.forEach(match => {
             const row = document.createElement("div");
             row.className = "match-row";
             row.innerHTML = `
@@ -387,19 +379,23 @@
                     <strong>${match.Team1} vs ${match.Team2}</strong><br>
                     <small>${new Date(match.Dt).toLocaleString('zh-HK')}</small>
                 </div>
-                <select class="score-select" data-match="${match.id}" data-field="Score1">
+                <select class="score-select" data-match="${doc.id}" data-field="Score1">
                     ${Array.from({length:11}, (_,i) => `<option value="${i}">${i}</option>`).join('')}
                 </select>
                 <div style="text-align:center; font-weight:bold;">:</div>
-                <select class="score-select" data-match="${match.id}" data-field="Score2">
+                <select class="score-select" data-match="${doc.id}" data-field="Score2">
                     ${Array.from({length:11}, (_,i) => `<option value="${i}">${i}</option>`).join('')}
                 </select>
+                <select class="score-select" data-match="${doc.id}" data-field="IsScoreConfirmed">
+                    <option value="N">N</option>
+                    <option value="Y">Y</option>
+                </select>
             `;
-            // Load current score
-            const s1 = row.querySelector('[data-field="Score1"]');
-            const s2 = row.querySelector('[data-field="Score2"]');
-            s1.value = match.Score1 || 0;
-            s2.value = match.Score2 || 0;
+            // Pre-fill current values
+            row.querySelector('[data-field="Score1"]').value = match.Score1 || 0;
+            row.querySelector('[data-field="Score2"]').value = match.Score2 || 0;
+            row.querySelector('[data-field="IsScoreConfirmed"]').value = match.IsScoreConfirmed || "N";
+            
             container.appendChild(row);
         });
     }
@@ -411,18 +407,20 @@
         let batch = db.batch();
         let count = 0;
 
-        for (let i = 0; i < selects.length; i += 2) {
+        for (let i = 0; i < selects.length; i += 3) {
             const score1Select = selects[i];
             const matchCd = score1Select.dataset.match;
             const score1 = parseInt(score1Select.value);
             const score2Select = selects[i+1];
             const score2 = parseInt(score2Select.value);
+            const confirmedSelect = selects[i+2];
+            const confirmed = confirmedSelect.value;
 
             const ref = db.collection("Match").doc(matchCd);
             batch.update(ref, {
                 Score1: score1,
                 Score2: score2,
-                IsScoreConfirmed: "Y",
+                IsScoreConfirmed: confirmed,
                 UpdateDt: new Date().toISOString()
             });
             count++;
