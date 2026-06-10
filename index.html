@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firestore Connectivity Test</title>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+    button { padding: 10px 16px; margin: 5px; font-size: 16px; }
+    pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>Firebase Firestore Connectivity Test</h1>
+  <p><strong>Replace the config below with your own Firebase config.</strong></p>
+
+  <button onclick="testWrite()">1. Write Test Document</button>
+  <button onclick="testRead()">2. Read Test Documents</button>
+  <button onclick="clearTestData()">3. Clear Test Data</button>
+  <button onclick="loginWithGoogle()">Login with Google (Optional)</button>
+
+  <h3>Status / Output:</h3>
+  <pre id="output"></pre>
+
+  <script>
+    // ==================== REPLACE THIS WITH YOUR CONFIG ====================
+    const firebaseConfig = {
+      apiKey: "AIzaSyBkvD9abm5J7mLPuEO8kt2mXQcKRshVv4M",
+      authDomain: "winningfantasy.firebaseapp.com",
+      projectId: "winningfantasy",
+      storageBucket: "winningfantasy.appspot.com",
+      messagingSenderId: "1030044797745",
+    };
+    // =====================================================================
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    const output = document.getElementById('output');
+
+    function log(message, isError = false) {
+      const time = new Date().toLocaleTimeString();
+      output.innerHTML += `<span class="${isError ? 'error' : 'success'}">[${time}] ${message}</span><br>`;
+      output.scrollTop = output.scrollHeight;
+    }
+
+    // Test Write
+    async function testWrite() {
+      try {
+        log("Writing test document...");
+        const docRef = await db.collection("test_collection").add({
+          message: "Hello from GitHub Pages!",
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          test: true
+        });
+        log(`✅ Success! Document written with ID: ${docRef.id}`, false);
+      } catch (error) {
+        log(`❌ Write Error: ${error.message}`, true);
+      }
+    }
+
+    // Test Read
+    async function testRead() {
+      try {
+        log("Reading test documents...");
+        const snapshot = await db.collection("test_collection")
+          .where("test", "==", true)
+          .orderBy("timestamp", "desc")
+          .limit(5)
+          .get();
+
+        if (snapshot.empty) {
+          log("No test documents found yet.");
+          return;
+        }
+
+        snapshot.forEach(doc => {
+          log(`📄 ${doc.id} → ${JSON.stringify(doc.data())}`);
+        });
+      } catch (error) {
+        log(`❌ Read Error: ${error.message}`, true);
+      }
+    }
+
+    // Clear test data
+    async function clearTestData() {
+      if (!confirm("Delete all test documents?")) return;
+      try {
+        log("Clearing test data...");
+        const snapshot = await db.collection("test_collection").where("test", "==", true).get();
+        const batch = db.batch();
+        snapshot.forEach(doc => batch.delete(doc.ref));
+        await batch.commit();
+        log("✅ Test data cleared.");
+      } catch (error) {
+        log(`❌ Clear Error: ${error.message}`, true);
+      }
+    }
+
+    // Optional Google Login
+    async function loginWithGoogle() {
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const result = await auth.signInWithPopup(provider);
+        log(`✅ Logged in as: ${result.user.email}`, false);
+      } catch (error) {
+        log(`❌ Login Error: ${error.message}`, true);
+      }
+    }
+
+    // Auto test on load
+    window.onload = () => {
+      log("Firebase initialized. Click buttons to test.");
+    };
+  </script>
+</body>
+</html>
