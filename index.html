@@ -270,7 +270,8 @@
             row.className = "match-row";
             row.innerHTML = `
                 <div class="match-info">
-                    <strong>[${match.Cd}] ${match.Name} ${match.Team1} vs ${match.Team2}</strong><br>
+                    <strong>[${match.Cd}] ${match.Name}</strong><br>
+                    <strong>${match.Team1} vs ${match.Team2}</strong><br>
                     <small>${formatMatchDate(match.Dt)}</small>
                 </div>
                 <select class="score-select" data-match="${match.id}" data-field="UserMatchScore1">
@@ -423,7 +424,7 @@
         entry.detailedMatches.forEach(m => {
             const match = m.match || {};
             html += `<tr>
-                <td>${match.Cd || ''} - ${match.Team1 || '?'} vs ${match.Team2 || '?'}</td>
+                <td>${match.Cd || ''} ${match.Name} - ${match.Team1 || '?'} vs ${match.Team2 || '?'}</td>
                 <td>${m.UserMatchScore1} - ${m.UserMatchScore2}</td>
                 <td>${match.Score1 || 0} - ${match.Score2 || 0}</td>
                 <td><strong>${m.points}</strong></td>
@@ -456,7 +457,8 @@
             row.className = "match-row";
             row.innerHTML = `
                 <div class="match-info">
-                    <strong>${match.Cd} - ${match.Name}</strong><br>
+                    <strong>[${match.Cd}] ${match.Name}</strong><br>
+                    <strong>${match.Team1} vs ${match.Team2}</strong><br>
                     <small>${formatMatchDate(match.Dt)}</small>
                 </div>
                 <select class="score-select" data-match="${doc.id}" data-field="Score1">${Array.from({length:11}, (_,i)=>`<option value="${i}">${i}</option>`).join('')}</select>
