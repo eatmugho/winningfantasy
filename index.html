@@ -1,181 +1,97 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Winning Fantasy - World Cup Predictor</title>
+    <title>Winning Fantasy - 世界盃估波</title>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            padding: 20px; 
-            background: #f5f5f7; 
-            color: #333; 
-            margin: 0;
+            margin: 0; padding: 0; background: #f5f5f7; color: #333; 
         }
         .container { 
-            max-width: 1000px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 30px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+            max-width: 900px; margin: 20px auto; background: white; 
+            border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); overflow: hidden;
         }
-        button { 
-            background: #0071e3; 
-            color: white; 
-            border: none; 
-            padding: 12px 24px; 
-            font-size: 16px; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-weight: 600; 
-            transition: background 0.2s; 
+        header { background: #0071e3; color: white; padding: 20px; text-align: center; }
+        .tabs { display: flex; border-bottom: 1px solid #ddd; }
+        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; font-weight: 600; }
+        .tab.active { border-bottom: 3px solid #0071e3; color: #0071e3; }
+        .content { padding: 20px; }
+        select, button, input { padding: 10px; margin: 5px 0; border-radius: 8px; }
+        button { background: #0071e3; color: white; border: none; cursor: pointer; font-weight: 600; }
+        button:hover { background: #0060c0; }
+        .match-row { 
+            display: grid; grid-template-columns: 1fr 80px 40px 80px; gap: 10px; 
+            align-items: center; padding: 12px; border-bottom: 1px solid #eee; 
         }
-        button:hover { background: #0077ed; }
-        button:disabled { background: #a2a2a2; cursor: not-allowed; }
-        .nav-tabs {
-            display: flex;
-            border-bottom: 2px solid #eee;
-            margin-bottom: 20px;
-        }
-        .tab {
-            padding: 12px 24px;
-            cursor: pointer;
-            font-weight: 600;
-            border-bottom: 3px solid transparent;
-        }
-        .tab.active {
-            color: #0071e3;
-            border-bottom: 3px solid #0071e3;
-        }
-        select, input {
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            font-size: 16px;
-        }
-        .match-row {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            gap: 20px;
-        }
-        .match-info {
-            flex: 1;
-        }
-        .score-inputs {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        .score-inputs select {
-            width: 70px;
-        }
-        .ranking-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        .ranking-table th, .ranking-table td {
-            padding: 12px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-        .ranking-table th {
-            background: #f8f8f8;
-        }
-        #log { 
-            margin-top: 20px; 
-            padding: 15px; 
-            background: #1d1d1f; 
-            color: #00ff66; 
-            font-family: monospace; 
-            border-radius: 6px; 
-            max-height: 200px; 
-            overflow-y: auto; 
-            font-size: 13px; 
-            white-space: pre-wrap; 
-            display: none;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .match-info { font-size: 14px; }
+        .score-select { width: 70px; }
+        .login-container { text-align: center; padding: 60px 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        .rank-row { background: #f9f9f9; }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <div class="header">
-        <h2>🏆 Winning Fantasy - World Cup 2026 Predictor</h2>
-        <div id="userSection" class="user-info"></div>
-    </div>
+    <header>
+        <h1>Winning Fantasy</h1>
+        <p>世界盃 2026 估波膽</p>
+    </header>
 
     <!-- Login Screen -->
-    <div id="loginScreen">
-        <h3>Welcome! Please sign in with Google to continue.</h3>
-        <button id="googleLoginBtn">Sign in with Google</button>
-        <div id="loginLog" style="margin-top: 20px; color: #666;"></div>
+    <div id="loginScreen" class="login-container">
+        <h2>歡迎使用估波系統</h2>
+        <button onclick="signInWithGoogle()" style="padding: 15px 30px; font-size: 18px;">
+            用 Google 帳戶登入
+        </button>
     </div>
 
     <!-- Main App -->
     <div id="mainApp" style="display: none;">
-        <div>
-            <label for="eventSelect">Select Event: </label>
-            <select id="eventSelect" style="margin-bottom: 20px;"></select>
+        <div style="padding: 15px; background: #f8f8f8; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <strong id="userNameDisplay"></strong>
+                <button onclick="signOut()" style="background: #888; margin-left: 10px;">登出</button>
+            </div>
+            <select id="eventSelect" onchange="loadEventData()" style="padding: 10px; font-size: 16px;"></select>
         </div>
 
-        <div class="nav-tabs">
-            <div id="tabPredict" class="tab active">估波膽</div>
-            <div id="tabRanking" class="tab">排名</div>
+        <div class="tabs">
+            <div class="tab active" id="tab1" onclick="switchTab(1)">估波膽</div>
+            <div class="tab" id="tab2" onclick="switchTab(2)">排名</div>
         </div>
 
-        <!-- Predict Tab -->
-        <div id="predictTab">
-            <form id="predictForm">
-                <div id="matchesList"></div>
-                <button type="submit" style="margin-top: 20px; width: 100%;">Submit Predictions</button>
-            </form>
+        <!-- 估波膽 Tab -->
+        <div id="tabContent1" class="content">
+            <div id="matchesList"></div>
+            <button onclick="submitPredictions()" style="width: 100%; margin-top: 20px; padding: 15px;">提交所有預測</button>
         </div>
 
-        <!-- Ranking Tab -->
-        <div id="rankingTab" style="display: none;">
-            <h3>Current Rankings for Selected Event</h3>
-            <div id="rankingContent"></div>
+        <!-- 排名 Tab -->
+        <div id="tabContent2" class="content" style="display: none;">
+            <h3>目前排名</h3>
+            <table id="rankingTable">
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>用戶</th>
+                        <th>正確比分</th>
+                        <th>總分</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { 
-        getAuth, 
-        GoogleAuthProvider, 
-        signInWithPopup, 
-        onAuthStateChanged, 
-        signOut 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { 
-        getFirestore, 
-        doc, 
-        setDoc, 
-        getDoc, 
-        getDocs, 
-        collection, 
-        query, 
-        where, 
-        updateDoc 
-    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    // Firebase Configuration
+<script>
+    // ==================== Firebase Config ====================
     const firebaseConfig = {
         apiKey: "AIzaSyBkvD9abm5J7mLPuEO8kt2mXQcKRshVv4M",
         authDomain: "winningfantasy.firebaseapp.com",
@@ -184,332 +100,257 @@
         messagingSenderId: "1030044797745",
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const provider = new GoogleAuthProvider();
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
 
     let currentUser = null;
     let currentEventCd = null;
+    let matchesData = [];
+    let userScores = {};
 
-    const logEl = document.createElement('div');
-    logEl.id = 'log';
-    document.body.appendChild(logEl); // for debugging
-
-    function log(message) {
-        console.log(message);
-        if (logEl) {
-            logEl.innerHTML += message + "\n";
-            logEl.style.display = 'block';
+    // ==================== Auth ====================
+    async function signInWithGoogle() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        try {
+            const result = await auth.signInWithPopup(provider);
+            currentUser = result.user;
+            await handleUserRegistration();
+        } catch (error) {
+            console.error("Login error:", error);
+            alert("登入失敗: " + error.message);
         }
     }
 
-    // Helper to format date
-    function formatDate(dtStr) {
-        return new Date(dtStr).toLocaleString('zh-TW', { 
-            year: 'numeric', month: '2-digit', day: '2-digit', 
-            hour: '2-digit', minute: '2-digit' 
-        });
-    }
+    async function handleUserRegistration() {
+        const userRef = db.collection("User").doc(currentUser.uid);
+        const docSnap = await userRef.get();
 
-    async function checkUserProfile(uid, email, displayName) {
-        const userRef = doc(db, "User", uid);
-        const userSnap = await getDoc(userRef);
-        
-        if (!userSnap.exists()) {
-            // Prompt for name
-            const desiredName = prompt(`Welcome! Please enter your desired display name:`, displayName || email.split('@')[0]);
-            if (!desiredName) return null;
-            
-            const userData = {
-                Cd: uid,
-                Name: desiredName,
-                Email: email,
-                IsAdmin: "N"
-            };
-            await setDoc(userRef, userData);
-            log(`New user profile created for ${desiredName}`);
-            return userData;
+        if (!docSnap.exists) {
+            const name = prompt("請輸入您的顯示名稱 (Name):", currentUser.displayName || "球迷");
+            if (!name) return;
+
+            await userRef.set({
+                Cd: currentUser.uid,
+                Name: name,
+                IsAdmin: "N",
+                Email: currentUser.email
+            });
+            alert("註冊成功！歡迎 " + name);
         }
-        return userSnap.data();
+
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("mainApp").style.display = "block";
+        document.getElementById("userNameDisplay").textContent = docSnap.exists ? docSnap.data().Name : currentUser.displayName || "用戶";
+        
+        loadActiveEvents();
     }
 
-    async function loadEvents() {
-        const eventsRef = collection(db, "Event");
-        const q = query(eventsRef, where("isActive", "==", "Y"));
-        const snapshot = await getDocs(q);
-        
-        const select = document.getElementById('eventSelect');
-        select.innerHTML = '';
-        
+    function signOut() {
+        auth.signOut().then(() => location.reload());
+    }
+
+    // ==================== Load Events ====================
+    async function loadActiveEvents() {
+        const snapshot = await db.collection("Event").where("isActive", "==", "Y").get();
+        const select = document.getElementById("eventSelect");
+        select.innerHTML = "";
+
         snapshot.forEach(doc => {
             const event = doc.data();
-            const option = document.createElement('option');
+            const option = document.createElement("option");
             option.value = event.Cd;
             option.textContent = event.Name;
             select.appendChild(option);
         });
-        
-        if (snapshot.size > 0) {
+
+        if (select.options.length > 0) {
             currentEventCd = select.value;
-            select.addEventListener('change', () => {
-                currentEventCd = select.value;
-                loadCurrentTab();
-            });
+            loadEventData();
         }
     }
 
-    async function loadMatchesForPrediction(eventCd) {
-        const matchesRef = collection(db, "Match");
-        const q = query(matchesRef, where("EventCd", "==", eventCd));
-        const snapshot = await getDocs(q);
+    // ==================== Tab Switching ====================
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(`tab${tab}`).classList.add('active');
         
+        document.getElementById("tabContent1").style.display = tab === 1 ? "block" : "none";
+        document.getElementById("tabContent2").style.display = tab === 2 ? "block" : "none";
+        
+        if (tab === 2) loadRanking();
+    }
+
+    // ==================== Load Matches for Event (Future Matches Only) ====================
+    async function loadEventData() {
+        currentEventCd = document.getElementById("eventSelect").value;
+        if (!currentEventCd) return;
+
         const now = new Date();
-        const matchesList = document.getElementById('matchesList');
-        matchesList.innerHTML = '';
-        
-        let hasMatches = false;
-        
-        snapshot.forEach(docSnap => {
-            const match = docSnap.data();
-            const matchDt = new Date(match.Dt);
-            
-            // Only show matches where Dt is earlier than current time (past/ongoing?)
-            if (matchDt < now) {
-                hasMatches = true;
-                
-                const row = document.createElement('div');
-                row.className = 'match-row';
-                row.innerHTML = `
-                    <div class="match-info">
-                        <strong>${match.Name}</strong><br>
-                        <small>${match.Team1} vs ${match.Team2}</small><br>
-                        <small>${formatDate(match.Dt)}</small>
-                    </div>
-                    <div class="score-inputs">
-                        <select name="score1_${match.Cd}" data-match="${match.Cd}">
-                            ${Array.from({length: 11}, (_, i) => `<option value="${i}">${i}</option>`).join('')}
-                        </select>
-                        <span> - </span>
-                        <select name="score2_${match.Cd}" data-match="${match.Cd}">
-                            ${Array.from({length: 11}, (_, i) => `<option value="${i}">${i}</option>`).join('')}
-                        </select>
-                    </div>
-                `;
-                matchesList.appendChild(row);
+
+        // Load Matches - Only show FUTURE matches (Dt > now)
+        const matchSnapshot = await db.collection("Match")
+            .where("EventCd", "==", currentEventCd)
+            .orderBy("Dt")
+            .get();
+
+        matchesData = [];
+        matchSnapshot.forEach(doc => {
+            const match = doc.data();
+            if (new Date(match.Dt) > now) {   // ← Changed to future matches
+                matchesData.push({ id: doc.id, ...match });
             }
         });
-        
-        if (!hasMatches) {
-            matchesList.innerHTML = '<p>No matches available for prediction at this time.</p>';
+
+        renderMatches();
+    }
+
+    function renderMatches() {
+        const container = document.getElementById("matchesList");
+        container.innerHTML = `<h3>${document.getElementById("eventSelect").options[document.getElementById("eventSelect").selectedIndex].text}</h3>`;
+
+        if (matchesData.length === 0) {
+            container.innerHTML += "<p>暫無可預測的未來賽事。</p>";
+            return;
         }
-        
-        // Load existing predictions
-        if (currentUser) {
-            const umsRef = collection(db, "UserMatchScore");
-            const umsQ = query(umsRef, 
-                where("UserCd", "==", currentUser.Cd),
-                where("MatchCd", "in", Array.from(snapshot.docs.map(d => d.id)).filter(m => {
-                    // This is simplified, better to load individually but for demo
-                }))
-            );
-            // For simplicity, load per match later or adjust
-            // In production, load all user's predictions for this event
-        }
+
+        matchesData.forEach(match => {
+            const row = document.createElement("div");
+            row.className = "match-row";
+            row.innerHTML = `
+                <div class="match-info">
+                    <strong>${match.Team1} vs ${match.Team2}</strong><br>
+                    <small>${new Date(match.Dt).toLocaleString('zh-HK')}</small>
+                </div>
+                <select class="score-select" data-match="${match.id}" data-field="Score1">
+                    ${Array.from({length:11}, (_,i) => `<option value="${i}">${i}</option>`).join('')}
+                </select>
+                <div style="text-align:center; font-weight:bold;">:</div>
+                <select class="score-select" data-match="${match.id}" data-field="Score2">
+                    ${Array.from({length:11}, (_,i) => `<option value="${i}">${i}</option>`).join('')}
+                </select>
+            `;
+            container.appendChild(row);
+        });
+
+        loadUserPredictions();
     }
 
     async function loadUserPredictions() {
         if (!currentUser || !currentEventCd) return;
-        
-        const umsRef = collection(db, "UserMatchScore");
-        const q = query(umsRef, where("UserCd", "==", currentUser.Cd));
-        const snapshot = await getDocs(q);
-        
-        const predictions = {};
+
+        const snapshot = await db.collection("UserMatchScore")
+            .where("UserCd", "==", currentUser.uid)
+            .get();
+
         snapshot.forEach(doc => {
             const data = doc.data();
-            predictions[data.MatchCd] = { score1: data.Score1, score2: data.Score2 };
-        });
-        
-        // Set values in form
-        document.querySelectorAll('select[data-match]').forEach(select => {
-            const matchCd = select.dataset.match;
-            const isScore1 = select.name.startsWith('score1');
-            if (predictions[matchCd]) {
-                select.value = isScore1 ? predictions[matchCd].score1 : predictions[matchCd].score2;
+            const matchCd = data.MatchCd;
+            const row = document.querySelector(`[data-match="${matchCd}"]`);
+            if (row) {
+                const parent = row.parentElement;
+                const selects = parent.querySelectorAll('select');
+                selects.forEach(select => {
+                    if (select.dataset.field === "Score1") select.value = data.Score1 || 0;
+                    if (select.dataset.field === "Score2") select.value = data.Score2 || 0;
+                });
             }
         });
     }
 
-    async function savePredictions(event) {
-        event.preventDefault();
-        
-        if (!currentUser) return;
-        
-        const selects = document.querySelectorAll('#matchesList select');
-        let updatedCount = 0;
-        
-        for (const select of selects) {
-            const matchCd = select.dataset.match;
-            const isScore1 = select.name.startsWith('score1_');
-            if (!isScore1) continue; // process pairs
-            
-            const score1Select = document.querySelector(`select[name="score1_${matchCd}"]`);
-            const score2Select = document.querySelector(`select[name="score2_${matchCd}"]`);
-            
-            if (score1Select && score2Select) {
-                const score1 = parseInt(score1Select.value);
-                const score2 = parseInt(score2Select.value);
-                
-                const docId = `${currentUser.Cd}-${matchCd}`;
-                const umsRef = doc(db, "UserMatchScore", docId);
-                
-                await setDoc(umsRef, {
-                    UserCd: currentUser.Cd,
-                    MatchCd: matchCd,
-                    Score1: score1,
-                    Score2: score2
-                }, { merge: true });
-                
-                updatedCount++;
-            }
+    async function submitPredictions() {
+        if (!currentUser) return alert("請先登入");
+
+        const selects = document.querySelectorAll('.score-select');
+        let batch = db.batch();
+        let count = 0;
+
+        for (let i = 0; i < selects.length; i += 2) {
+            const score1Select = selects[i];
+            const matchCd = score1Select.dataset.match;
+            const score1 = parseInt(score1Select.value);
+            const score2Select = selects[i+1];
+            const score2 = parseInt(score2Select.value);
+
+            const docId = `${currentUser.uid}-${matchCd}`;
+            const ref = db.collection("UserMatchScore").doc(docId);
+
+            batch.set(ref, {
+                UserCd: currentUser.uid,
+                MatchCd: matchCd,
+                Score1: score1,
+                Score2: score2
+            }, { merge: true });
+            count++;
         }
-        
-        alert(`Successfully updated ${updatedCount} match predictions!`);
-        loadCurrentTab();
+
+        await batch.commit();
+        alert(`✅ 已成功提交 ${count} 場比賽的預測！`);
     }
 
-    async function loadRanking(eventCd) {
-        const content = document.getElementById('rankingContent');
-        content.innerHTML = '<p>Loading rankings...</p>';
-        
-        // Get all UserMatchScores for this event's matches
-        const matchesRef = collection(db, "Match");
-        const matchQ = query(matchesRef, where("EventCd", "==", eventCd));
-        const matchSnap = await getDocs(matchQ);
-        const matchCds = matchSnap.docs.map(d => d.id);
-        
-        const umsRef = collection(db, "UserMatchScore");
-        const umsQ = query(umsRef, where("MatchCd", "in", matchCds.slice(0, 10))); // limit for Firestore 'in'
-        
-        const umsSnap = await getDocs(umsQ);
-        
-        // Group by user
-        const userScores = {};
-        
-        umsSnap.forEach(doc => {
+    // ==================== Ranking ====================
+    async function loadRanking() {
+        if (!currentEventCd) return;
+
+        const tbody = document.querySelector("#rankingTable tbody");
+        tbody.innerHTML = "<tr><td colspan='4'>載入中...</td></tr>";
+
+        const snapshot = await db.collection("UserMatchScore")
+            .where("MatchCd", ">=", currentEventCd)
+            .where("MatchCd", "<=", currentEventCd + "\uf8ff")
+            .get();
+
+        const userStats = {};
+
+        snapshot.forEach(doc => {
             const data = doc.data();
-            if (!userScores[data.UserCd]) {
-                userScores[data.UserCd] = { name: data.UserCd, total: 0, matches: 0 };
+            if (!userStats[data.UserCd]) {
+                userStats[data.UserCd] = { correct: 0, total: 0, name: "未知用戶" };
             }
-            // Simple scoring: exact score = 3pts, correct winner = 1pt, etc. For now placeholder
-            userScores[data.UserCd].matches++;
-            // Placeholder total
+            userStats[data.UserCd].total++;
         });
-        
-        // Fetch user names
-        let html = `<table class="ranking-table">
-            <thead><tr><th>Rank</th><th>Player</th><th>Matches Predicted</th><th>Points</th></tr></thead>
-            <tbody>`;
-        
-        Object.values(userScores).sort((a,b) => b.matches - a.matches).forEach((user, idx) => {
-            html += `<tr>
-                <td>${idx+1}</td>
-                <td>${user.name}</td>
-                <td>${user.matches}</td>
-                <td>${user.total || 'TBD'}</td>
-            </tr>`;
-        });
-        
-        html += '</tbody></table>';
-        content.innerHTML = html || '<p>No predictions submitted yet for this event.</p>';
-    }
 
-    function loadCurrentTab() {
-        const activeTab = document.querySelector('.tab.active').id === 'tabPredict' ? 'predict' : 'ranking';
-        
-        if (activeTab === 'predict') {
-            document.getElementById('predictTab').style.display = 'block';
-            document.getElementById('rankingTab').style.display = 'none';
-            loadMatchesForPrediction(currentEventCd).then(() => {
-                loadUserPredictions();
-            });
-        } else {
-            document.getElementById('predictTab').style.display = 'none';
-            document.getElementById('rankingTab').style.display = 'block';
-            loadRanking(currentEventCd);
+        // Get user names
+        for (let uid of Object.keys(userStats)) {
+            const userDoc = await db.collection("User").doc(uid).get();
+            if (userDoc.exists) userStats[uid].name = userDoc.data().Name;
+        }
+
+        tbody.innerHTML = "";
+        const sorted = Object.entries(userStats).sort((a, b) => b[1].total - a[1].total);
+
+        sorted.forEach((entry, index) => {
+            const [uid, stats] = entry;
+            const tr = document.createElement("tr");
+            tr.className = "rank-row";
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${stats.name}</td>
+                <td>${stats.correct} / ${stats.total}</td>
+                <td>${stats.total * 3}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        if (sorted.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='4'>暫無排名資料</td></tr>";
         }
     }
 
-    // Tab switching
-    function setupTabs() {
-        const predictTab = document.getElementById('tabPredict');
-        const rankingTab = document.getElementById('tabRanking');
-        
-        predictTab.addEventListener('click', () => {
-            predictTab.classList.add('active');
-            rankingTab.classList.remove('active');
-            loadCurrentTab();
-        });
-        
-        rankingTab.addEventListener('click', () => {
-            rankingTab.classList.add('active');
-            predictTab.classList.remove('active');
-            loadCurrentTab();
-        });
-    }
-
-    // Auth state listener
-    onAuthStateChanged(auth, async (user) => {
-        const loginScreen = document.getElementById('loginScreen');
-        const mainApp = document.getElementById('mainApp');
-        const userSection = document.getElementById('userSection');
-        
+    // ==================== Auth State Listener ====================
+    auth.onAuthStateChanged(user => {
         if (user) {
-            currentUser = await checkUserProfile(user.uid, user.email, user.displayName);
-            
-            if (currentUser) {
-                loginScreen.style.display = 'none';
-                mainApp.style.display = 'block';
-                
-                userSection.innerHTML = `
-                    Hello, ${currentUser.Name} 
-                    <button onclick="logout()" style="padding: 6px 12px; font-size: 14px;">Logout</button>
-                `;
-                
-                await loadEvents();
-                setupTabs();
-                loadCurrentTab();
-            }
+            currentUser = user;
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("mainApp").style.display = "block";
+            document.getElementById("userNameDisplay").textContent = user.displayName || "用戶";
+            loadActiveEvents();
         } else {
-            loginScreen.style.display = 'block';
-            mainApp.style.display = 'none';
-            userSection.innerHTML = '';
+            document.getElementById("loginScreen").style.display = "block";
+            document.getElementById("mainApp").style.display = "none";
         }
     });
-
-    // Google Login
-    document.getElementById('googleLoginBtn').addEventListener('click', async () => {
-        try {
-            const result = await signInWithPopup(auth, provider);
-            // Handled by onAuthStateChanged
-        } catch (error) {
-            console.error("Login error:", error);
-            alert("Login failed: " + error.message);
-        }
-    });
-
-    window.logout = async function() {
-        try {
-            await signOut(auth);
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
-    // Form submit
-    document.getElementById('predictForm').addEventListener('submit', savePredictions);
 </script>
-
 </body>
 </html>
