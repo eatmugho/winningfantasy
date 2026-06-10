@@ -135,7 +135,7 @@
     let currentUser = null;
     let currentEventCd = null;
     let isAdmin = false;
-    let rankingDataCache = [];   // Store ranking data for modal
+    let rankingDataCache = [];
 
     // ==================== Auth ====================
     async function signInWithGoogle() {
@@ -151,15 +151,20 @@
     }
 
     async function handleUserRegistration() {
-        let userCd = currentUser.email ? currentUser.email.split('@')[0] : currentUser.uid;
-
+        const userCd = currentUser.email ? currentUser.email.split('@')[0] : currentUser.uid;
         const userRef = db.collection("User").doc(userCd);
-        //const docSnap = await userRef.get();
-        const docSnap = userRef.get();
+        const docSnap = await userRef.get();
+
+        let displayName = currentUser.displayName || "用戶";
 
         if (!docSnap.exists) {
+            // First time user - prompt for name
             const name = prompt("請輸入您的顯示名稱 (Name):", currentUser.displayName || "球迷");
-            if (!name) return;
+            if (!name) {
+                alert("必須輸入名稱才能繼續");
+                auth.signOut();
+                return;
+            }
 
             await userRef.set({
                 Cd: userCd,
@@ -167,18 +172,18 @@
                 IsAdmin: "N",
                 UpdateDt: new Date().toISOString()
             });
+
+            displayName = name;
             alert("註冊成功！歡迎 " + name);
         } else {
+            // Existing user
             const userData = docSnap.data();
+            displayName = userData.Name || displayName;
             isAdmin = userData.IsAdmin === "Y";
             if (isAdmin) document.getElementById("tab3").classList.remove("hidden");
         }
 
-        document.getElementById("loginScreen").style.display = "none";
-        document.getElementById("mainApp").style.display = "block";
-        document.getElementById("userNameDisplay").textContent = docSnap.exists ? docSnap.data().Name : currentUser.displayName || "用戶";
-        
-        loadActiveEvents();
+        document.getElementById("userNameDisplay").textContent = displayName;
     }
 
     function signOut() {
@@ -337,7 +342,6 @@
             userMap[d.UserCd].matches.push(d);
         });
 
-        // Load all matches for scoring
         const matchSnapshot = await db.collection("Match").where("EventCd", "==", currentEventCd).get();
         const matchMap = {};
         matchSnapshot.forEach(doc => matchMap[doc.id] = doc.data());
@@ -385,12 +389,12 @@
     }
 
     function calculatePoints(match, ums) {
+        if (match.IsScoreConfirmed !== "Y") return 0;
         const m1 = parseInt(match.Score1 || 0);
         const m2 = parseInt(match.Score2 || 0);
         const u1 = parseInt(ums.UserMatchScore1 || 0);
         const u2 = parseInt(ums.UserMatchScore2 || 0);
 
-        if (match.IsScoreConfirmed === "N") return 0;
         if (m1 === u1 && m2 === u2) return 3;
         if ((m1 > m2 && u1 > u2) || (m1 < m2 && u1 < u2) || (m1 === m2 && u1 === u2)) return 1;
         return 0;
@@ -402,24 +406,16 @@
 
         document.getElementById("modalUserName").textContent = `${entry.name} 的預測詳情`;
 
-        let html = `
-            <table style="width:100%; border-collapse:collapse;">
-                <thead>
-                    <tr><th>比賽</th><th>你的預測</th><th>實際賽果</th><th>得分</th></tr>
-                </thead>
-                <tbody>
-        `;
+        let html = `<table style="width:100%; border-collapse:collapse;"><thead><tr><th>比賽</th><th>你的預測</th><th>實際賽果</th><th>得分</th></tr></thead><tbody>`;
 
         entry.detailedMatches.forEach(m => {
             const match = m.match || {};
-            html += `
-                <tr>
-                    <td>${match.Team1 || '?'} vs ${match.Team2 || '?'}</td>
-                    <td>${m.UserMatchScore1} - ${m.UserMatchScore2}</td>
-                    <td>${match.Score1 || 0} - ${match.Score2 || 0}</td>
-                    <td><strong>${m.points}</strong></td>
-                </tr>
-            `;
+            html += `<tr>
+                <td>${match.Team1 || '?'} vs ${match.Team2 || '?'}</td>
+                <td>${m.UserMatchScore1} - ${m.UserMatchScore2}</td>
+                <td>${match.Score1 || 0} - ${match.Score2 || 0}</td>
+                <td><strong>${m.points}</strong></td>
+            </tr>`;
         });
 
         html += `</tbody></table>`;
@@ -434,7 +430,6 @@
     // ==================== Admin Tab ====================
     async function loadAdminMatches() {
         if (!isAdmin) return;
-        // ... (same as previous version)
         const container = document.getElementById("adminMatchesList");
         container.innerHTML = `<h3>${document.getElementById("eventSelect").options[document.getElementById("eventSelect").selectedIndex].text} - 賽果維護</h3>`;
 
@@ -490,18 +485,13 @@
         alert(`✅ 已更新 ${count} 場賽果！`);
     }
 
-    // Auth Listener
-    auth.onAuthStateChanged(user => {
+    // Auth State Listener
+    auth.onAuthStateChanged(async (user) => {
         if (user) {
-            /*
             currentUser = user;
             document.getElementById("loginScreen").style.display = "none";
             document.getElementById("mainApp").style.display = "block";
-            document.getElementById("userNameDisplay").textContent = user.displayName || "用戶";
-            loadActiveEvents();
-            */
-            currentUser = user;
-            handleUserRegistration();
+            await handleUserRegistration();   // This now properly sets the name
             loadActiveEvents();
         } else {
             document.getElementById("loginScreen").style.display = "block";
