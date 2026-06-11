@@ -55,6 +55,7 @@
     <!-- Login Screen -->
     <div id="loginScreen" class="login-container">
         <h2>歡迎參與遊戲</h2>
+        <!-- Label changed to match the fixed redirect experience -->
         <button onclick="signInWithGoogle()" style="padding: 15px 30px; font-size: 18px;">
             用 Google 帳戶登入
         </button>
@@ -153,13 +154,12 @@
         return `${yyyy}-${mm}-${dd} ${hh}:${min}${ampm}`;
     }
 
-    // ==================== Auth ====================
+    // ==================== Auth (Fixed for Safari ITP) ====================
     async function signInWithGoogle() {
         const provider = new firebase.auth.GoogleAuthProvider();
         try {
-            const result = await auth.signInWithPopup(provider);
-            currentUser = result.user;
-            await handleUserRegistration();
+            // Switched from signInWithPopup to signInWithRedirect to protect storage context on iOS Safari
+            await auth.signInWithRedirect(provider);
         } catch (error) {
             console.error("Login error:", error);
             alert("登入失敗: " + error.message);
@@ -262,6 +262,7 @@
         renderUserMatches(matchesData);
     }
 
+    // ==================== Render User Matches ====================
     function renderUserMatches(matchesData) {
         const container = document.getElementById("matchesList");
         container.innerHTML = `<h3>${document.getElementById("eventSelect").options[document.getElementById("eventSelect").selectedIndex].text}</h3>`;
@@ -505,7 +506,7 @@
         alert(`✅ 已更新 ${count} 場賽果！`);
     }
 
-    // Auth State Listener
+    // ==================== Auth State Listener (Updated) ====================
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             currentUser = user;
@@ -514,6 +515,21 @@
             await handleUserRegistration();
             loadActiveEvents();
         } else {
+            // Check if user is returning from a signInWithRedirect operation
+            try {
+                const result = await auth.getRedirectResult();
+                if (result && result.user) {
+                    currentUser = result.user;
+                    document.getElementById("loginScreen").style.display = "none";
+                    document.getElementById("mainApp").style.display = "block";
+                    await handleUserRegistration();
+                    loadActiveEvents();
+                    return;
+                }
+            } catch (redirectError) {
+                console.error("Redirect resolution error:", redirectError);
+            }
+
             document.getElementById("loginScreen").style.display = "block";
             document.getElementById("mainApp").style.display = "none";
             hasRegistered = false;
