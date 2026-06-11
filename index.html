@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Winning Fantasy (估波膽遊戲)</title>
+    <title>估波膽遊戲</title>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -48,7 +48,7 @@
 <body>
 <div class="container">
     <header>
-        <h1>Winning Fantasy (估波膽遊戲)</h1>
+        <h1>估波膽遊戲</h1>
         <p>玩法: 請每場波開波前輸入你嘅心水賽果。 計分方法: 估中波膽3分, 估中主客和1分。</p>
     </header>
 
@@ -136,6 +136,7 @@
     let currentEventCd = null;
     let isAdmin = false;
     let rankingDataCache = [];
+    let hasRegistered = false;   // Prevent double prompt
 
     // ==================== Date Formatter ====================
     function formatMatchDate(dtStr) {
@@ -147,7 +148,7 @@
         const min = String(date.getMinutes()).padStart(2, '0');
         const ampm = hh >= 12 ? 'pm' : 'am';
         hh = hh % 12;
-        hh = hh ? hh : 12; // 12 instead of 0
+        hh = hh ? hh : 12;
         return `${yyyy}-${mm}-${dd} ${hh}:${min}${ampm}`;
     }
 
@@ -165,6 +166,9 @@
     }
 
     async function handleUserRegistration() {
+        if (hasRegistered) return;
+        hasRegistered = true;
+
         const userCd = currentUser.email ? currentUser.email.split('@')[0] : currentUser.uid;
         const userRef = db.collection("User").doc(userCd);
         const docSnap = await userRef.get();
@@ -176,6 +180,7 @@
             if (!name) {
                 alert("必須輸入名稱才能繼續");
                 auth.signOut();
+                hasRegistered = false;
                 return;
             }
 
@@ -510,6 +515,7 @@
         } else {
             document.getElementById("loginScreen").style.display = "block";
             document.getElementById("mainApp").style.display = "none";
+            hasRegistered = false;
         }
     });
 </script>
