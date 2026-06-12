@@ -245,7 +245,9 @@
         currentEventCd = document.getElementById("eventSelect").value;
         if (!currentEventCd) return;
 
-        const now = new Date();
+        // Use Hong Kong Time (UTC+8)
+        const nowHK = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Hong_Kong" }));
+
         const matchSnapshot = await db.collection("Match")
             .where("EventCd", "==", currentEventCd)
             .orderBy("Dt")
@@ -254,7 +256,7 @@
         const matchesData = [];
         matchSnapshot.forEach(doc => {
             const match = doc.data();
-            if (new Date(match.Dt) > now) {
+            if (new Date(match.Dt) > nowHK) {
                 matchesData.push({ id: doc.id, ...match });
             }
         });
