@@ -245,7 +245,11 @@
         currentEventCd = document.getElementById("eventSelect").value;
         if (!currentEventCd) return;
 
-        const now = new Date();
+        // 1. Get the current UTC time, then format it to Hong Kong Time (Asia/Hong Kong)
+        const options = { timeZone: 'Asia/Hong Kong', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' };
+        const hkTimeStr = new Intl.DateTimeFormat('en-US', options).format(new Date());
+        const now = new Date(hkTimeStr); // This locks 'now' into the HK timezone perspective
+
         const matchSnapshot = await db.collection("Match")
             .where("EventCd", "==", currentEventCd)
             .orderBy("Dt")
@@ -254,7 +258,11 @@
         const matchesData = [];
         matchSnapshot.forEach(doc => {
             const match = doc.data();
-            if (new Date(match.Dt) > now) {
+            
+            // 2. Also ensure the match time is evaluated relative to Hong Kong time zone if stored as text
+            const matchDtHKStr = new Intl.DateTimeFormat('en-US', options).format(new Date(match.Dt));
+            
+            if (new Date(matchDtHKStr) > now) {
                 matchesData.push({ id: doc.id, ...match });
             }
         });
