@@ -432,9 +432,9 @@
         entry.detailedMatches.forEach(m => {
             const match = m.match || {};
             html += `<tr>
-                <td>${match.Cd || ''} ${match.Name} - ${match.Team1 || '?'} vs ${match.Team2 || '?'}</td>
+                <td>${match.Cd || ''} ${match.Name}<br>${match.Team1 || '?'} vs ${match.Team2 || '?'}</td>
                 <td>${m.UserMatchScore1} - ${m.UserMatchScore2}</td>
-                <td>${match.Score1 || 0} - ${match.Score2 || 0}</td>
+                <td style="white-space: nowrap;">${match.Score1 || 0} - ${match.Score2 || 0}</td>
                 <td><strong>${m.points}</strong></td>
             </tr>`;
         });
