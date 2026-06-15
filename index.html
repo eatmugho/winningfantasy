@@ -29,6 +29,10 @@
             display: grid; grid-template-columns: 1fr 70px 10px 70px 0px; gap: 1px; 
             align-items: center; padding: 6px; border-bottom: 1px solid #eee; 
         }
+        .main-match-row { 
+            display: grid; grid-template-columns: 1fr 70px 10px 70px 70px 0px; gap: 1px; 
+            align-items: center; padding: 6px; border-bottom: 1px solid #eee; 
+        }
         .match-info { font-size: 18px; }
         .score-select { width: 70px; }
         .login-container { text-align: center; padding: 60px 20px; }
@@ -479,7 +483,7 @@
         matchSnapshot.forEach(doc => {
             const match = doc.data();
             const row = document.createElement("div");
-            row.className = "match-row";
+            row.className = "main-match-row";
             row.innerHTML = `
                 <div class="match-info">
                     <small>[${match.Cd}] ${match.Name}</small><br>
