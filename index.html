@@ -97,7 +97,7 @@
                         <th>排名</th>
                         <th>用戶</th>
                         <th>總分</th>
-                        <th>中波膽次數</th>
+                        <th><span style="white-space: nowrap;">中波膽</span>次數</th>
                         <th>&nbsp;</th>
                     </tr>
                 </thead>
@@ -445,8 +445,8 @@
             tr.innerHTML = `
                 <td>${idx + 1}</td>
                 <td>${entry.name}</td>
-                <td><strong>${entry.totalPoints}</strong></td>
-                <td><strong>${entry.exactWins}</strong></td>
+                <td style="text-align:right"><strong>${entry.totalPoints}</strong></td>
+                <td style="text-align:right"><strong>${entry.exactWins}</strong></td>
                 <td style="white-space: nowrap;"><button onclick="showUserDetails(${idx})">詳情</button></td>
             `;
             tbody.appendChild(tr);
