@@ -47,6 +47,7 @@
         .modal-content {
             background: white; padding: 15px; border-radius: 12px; max-width: 850px; max-height: 85vh; overflow-y: auto; width: 95%;
         }
+        .warning { color: #d32f2f; font-size: 14px; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -146,6 +147,7 @@
     let isAdmin = false;
     let rankingDataCache = [];
     let hasRegistered = false;   // Prevent double prompt
+    let currentMatchesData = []; // Store current matches with timestamps
 
     // ==================== Date Formatter ====================
     function formatMatchDate(dtStr) {
@@ -261,11 +263,13 @@
             .orderBy("Dt")
             .get();
 
+        currentMatchesData = [];
         const matchesData = [];
         matchSnapshot.forEach(doc => {
             const match = doc.data();
             if (new Date(match.Dt) > nowHK) {
                 matchesData.push({ id: doc.id, ...match });
+                currentMatchesData.push({ id: doc.id, Dt: match.Dt });
             }
         });
 
@@ -323,11 +327,43 @@
         });
     }
 
+    function isMatchStillOpen(matchId) {
+        const match = currentMatchesData.find(m => m.id === matchId);
+        if (!match) return false;
+        
+        const nowHK = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Hong_Kong" }));
+        return new Date(match.Dt) > nowHK;
+    }
+
     async function submitUserPredictions() {
         if (!currentUser) return alert("請先登入");
+
+        // Check if any match has already started
+        const selects = document.querySelectorAll('#tabContent1 .score-select');
+        let hasClosedMatch = false;
+        let closedMatchNames = [];
+
+        for (let i = 0; i < selects.length; i += 2) {
+            const s1 = selects[i];
+            const matchId = s1.dataset.match;
+            
+            if (!isMatchStillOpen(matchId)) {
+                hasClosedMatch = true;
+                const matchInfo = s1.closest('.match-row').querySelector('.match-info strong');
+                if (matchInfo) closedMatchNames.push(matchInfo.textContent);
+            }
+        }
+
+        if (hasClosedMatch) {
+            const msg = closedMatchNames.length > 0 
+                ? `以下比賽已經開始或已過開始時間，無法提交：\n${closedMatchNames.join('\n')}\n\n請刷新頁面後再試。`
+                : `部分比賽已經開始或已過開始時間，無法提交預測。\n\n請刷新頁面後再試。`;
+            alert(msg);
+            return;
+        }
+
         const userCd = currentUser.email ? currentUser.email.split('@')[0] : currentUser.uid;
 
-        const selects = document.querySelectorAll('#tabContent1 .score-select');
         let batch = db.batch();
         let count = 0;
 
