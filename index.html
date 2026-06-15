@@ -92,7 +92,8 @@
                         <th>排名</th>
                         <th>用戶</th>
                         <th>總分</th>
-                        <th>操作</th>
+                        <th>中波膽次數</th>
+                        <th>&nbsp;</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -102,6 +103,9 @@
         <!-- 維護 Tab (Admin Only) -->
         <div id="tabContent3" class="content" style="display: none;">
             <h3>賽果維護</h3>
+            <button onclick="submitMatchResults()" style="width: 100%; margin-top: 20px; padding: 15px; background: #d32f2f;">
+                更新賽果
+            </button>
             <div id="adminMatchesList"></div>
             <button onclick="submitMatchResults()" style="width: 100%; margin-top: 20px; padding: 15px; background: #d32f2f;">
                 更新賽果
@@ -348,7 +352,7 @@
     async function loadRanking() {
         if (!currentEventCd) return;
         const tbody = document.querySelector("#rankingTable tbody");
-        tbody.innerHTML = "<tr><td colspan='4'>載入中...</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='5'>載入中...</td></tr>";
 
         const scoreSnapshot = await db.collection("UserMatchScore")
             .where("MatchCd", ">=", currentEventCd)
@@ -371,10 +375,12 @@
 
         for (let uid in userMap) {
             let totalPoints = 0;
+            let exactWins = 0;
             const detailedMatches = userMap[uid].matches.map(ums => {
                 const match = matchMap[ums.MatchCd] || {};
                 const points = calculatePoints(match, ums);
                 totalPoints += points;
+                if (points === 3) exactWins++;
                 return { ...ums, points, match };
             });
 
@@ -385,6 +391,7 @@
                 uid,
                 name,
                 totalPoints,
+                exactWins,
                 detailedMatches
             });
         }
@@ -399,13 +406,14 @@
                 <td>${idx + 1}</td>
                 <td>${entry.name}</td>
                 <td><strong>${entry.totalPoints}</strong></td>
-                <td style="white-space: nowrap;"><button onclick="showUserDetails(${idx})">顯示詳情</button></td>
+                <td><strong>${entry.exactWins}</strong></td>
+                <td style="white-space: nowrap;"><button onclick="showUserDetails(${idx})">詳情</button></td>
             `;
             tbody.appendChild(tr);
         });
 
         if (rankingDataCache.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4'>暫無排名資料</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='5'>暫無排名資料</td></tr>";
         }
     }
 
@@ -427,9 +435,18 @@
 
         document.getElementById("modalUserName").textContent = `${entry.name} 的預測詳情`;
 
+        // Filter confirmed matches only and sort by MatchCd descending
+        const confirmedMatches = entry.detailedMatches
+            .filter(m => (m.match || {}).IsScoreConfirmed === "Y")
+            .sort((a, b) => {
+                const cdA = (a.match || {}).Cd || '';
+                const cdB = (b.match || {}).Cd || '';
+                return cdB.localeCompare(cdA);
+            });
+
         let html = `<table style="width:100%; border-collapse:collapse;"><thead><tr><th>比賽</th><th>你的預測</th><th>實際賽果</th><th>得分</th></tr></thead><tbody>`;
 
-        entry.detailedMatches.forEach(m => {
+        confirmedMatches.forEach(m => {
             const match = m.match || {};
             html += `<tr>
                 <td>${match.Cd || ''} ${match.Name}<br>${match.Team1 || '?'} vs ${match.Team2 || '?'}</td>
