@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Firestore Complete Data Importer</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; background: #f5f5f7; color: #333; }
+        .container { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        button { background: #0071e3; color: white; border: none; padding: 14px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: 600; transition: background 0.2s; }
+        button:hover { background: #0077ed; }
+        button:disabled { background: #a2a2a2; cursor: not-allowed; }
+        #progress-bar { width: 0%; height: 6px; background: #0071e3; margin-top: 15px; border-radius: 3px; transition: width 0.1s; }
+        #log { margin-top: 20px; padding: 15px; background: #1d1d1f; color: #00ff66; font-family: monospace; border-radius: 6px; max-height: 350px; overflow-y: auto; font-size: 13px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Firestore Complete Data Importer</h2>
+    <p>Click the button below to initialize your Firestore collections using all rows compiled from <strong>collections.xlsx</strong>.</p>
+    <button id="importBtn">Import All Rows to Firestore</button>
+    <div id="progress-bar"></div>
+    <div id="log">Ready. Logs will appear here...</div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Your Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyBkvD9abm5J7mLPuEO8kt2mXQcKRshVv4M",
+        authDomain: "winningfantasy.firebaseapp.com",
+        projectId: "winningfantasy",
+        storageBucket: "winningfantasy.appspot.com",
+        messagingSenderId: "1030044797745",
+    };
+
+    // Initialize Firebase Services
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // --- ENTIRE DATASET EXTRACTED FROM collections.xlsx ---
+    const users = [
+        {"Cd": "granthome", "Name": "Grant", "IsAdmin": "Y", "UpdateDt": "2026-06-11T03:36:54.869Z"}
+    ];
+
+    const events = [
+        {"Cd": "WC2026G", "Name": "世界盃 2026 (分組賽)", "isActive": "Y", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K", "Name": "世界盃 2026 (淘汰賽)", "isActive": "Y", "UpdateDt": "2026-06-11T03:36:54.869Z"}
+    ];
+
+    const matches = [
+        {"Cd": "WC2026G-01", "EventCd": "WC2026G", "Dt": "2026-06-12 03:00:00", "Name": "分組賽 - A1 vs A2", "Team1": "墨西哥", "Team2": "南非", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-02", "EventCd": "WC2026G", "Dt": "2026-06-12 10:00:00", "Name": "分組賽 - A3 vs A4", "Team1": "韓國", "Team2": "捷克", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-03", "EventCd": "WC2026G", "Dt": "2026-06-13 03:00:00", "Name": "分組賽 - B1 vs B2", "Team1": "加拿大", "Team2": "波斯尼亞", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-04", "EventCd": "WC2026G", "Dt": "2026-06-13 09:00:00", "Name": "分組賽 - D1 vs D2", "Team1": "美國", "Team2": "巴拉圭", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-05", "EventCd": "WC2026G", "Dt": "2026-06-14 03:00:00", "Name": "分組賽 - B3 vs B4", "Team1": "卡塔爾", "Team2": "瑞士", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-06", "EventCd": "WC2026G", "Dt": "2026-06-14 06:00:00", "Name": "分組賽 - C1 vs C2", "Team1": "巴西", "Team2": "摩洛哥", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-07", "EventCd": "WC2026G", "Dt": "2026-06-14 09:00:00", "Name": "分組賽 - C3 vs C4", "Team1": "海地", "Team2": "蘇格蘭", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-08", "EventCd": "WC2026G", "Dt": "2026-06-14 12:00:00", "Name": "分組賽 - D3 vs D4", "Team1": "澳洲", "Team2": "土耳其", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-09", "EventCd": "WC2026G", "Dt": "2026-06-15 01:00:00", "Name": "分組賽 - E1 vs E2", "Team1": "德國", "Team2": "庫拉索", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-10", "EventCd": "WC2026G", "Dt": "2026-06-15 04:00:00", "Name": "分組賽 - F1 vs F2", "Team1": "荷蘭", "Team2": "日本", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-11", "EventCd": "WC2026G", "Dt": "2026-06-15 07:00:00", "Name": "分組賽 - E3 vs E4", "Team1": "科特迪瓦", "Team2": "厄瓜多爾", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-12", "EventCd": "WC2026G", "Dt": "2026-06-15 10:00:00", "Name": "分組賽 - F3 vs F4", "Team1": "瑞典", "Team2": "突尼西亞", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-13", "EventCd": "WC2026G", "Dt": "2026-06-16 00:00:00", "Name": "分組賽 - H1 vs H2", "Team1": "西班牙", "Team2": "佛得角", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-14", "EventCd": "WC2026G", "Dt": "2026-06-16 03:00:00", "Name": "分組賽 - G1 vs G2", "Team1": "比利時", "Team2": "埃及", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-15", "EventCd": "WC2026G", "Dt": "2026-06-16 06:00:00", "Name": "分組賽 - H3 vs H4", "Team1": "沙地阿拉伯", "Team2": "烏拉圭", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-16", "EventCd": "WC2026G", "Dt": "2026-06-16 09:00:00", "Name": "分組賽 - G3 vs G4", "Team1": "伊朗", "Team2": "紐西蘭", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-17", "EventCd": "WC2026G", "Dt": "2026-06-17 03:00:00", "Name": "分組賽 - I1 vs I2", "Team1": "法國", "Team2": "塞內加爾", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-18", "EventCd": "WC2026G", "Dt": "2026-06-17 06:00:00", "Name": "分組賽 - I3 vs I4", "Team1": "伊拉克", "Team2": "挪威", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-19", "EventCd": "WC2026G", "Dt": "2026-06-17 09:00:00", "Name": "分組賽 - J1 vs J2", "Team1": "阿根廷", "Team2": "阿爾及利亞", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-20", "EventCd": "WC2026G", "Dt": "2026-06-17 12:00:00", "Name": "分組賽 - J3 vs J4", "Team1": "奧地利", "Team2": "約旦", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-21", "EventCd": "WC2026G", "Dt": "2026-06-18 01:00:00", "Name": "分組賽 - K1 vs K2", "Team1": "葡萄牙", "Team2": "剛果民主共和國", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-22", "EventCd": "WC2026G", "Dt": "2026-06-18 04:00:00", "Name": "分組賽 - L1 vs L2", "Team1": "英格蘭", "Team2": "克羅地亞", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-23", "EventCd": "WC2026G", "Dt": "2026-06-18 07:00:00", "Name": "分組賽 - L3 vs L4", "Team1": "加納", "Team2": "巴拿馬", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-24", "EventCd": "WC2026G", "Dt": "2026-06-18 10:00:00", "Name": "分組賽 - K3 vs K4", "Team1": "烏茲別克", "Team2": "哥倫比亞", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-25", "EventCd": "WC2026G", "Dt": "2026-06-19 00:00:00", "Name": "分組賽 - A4 vs A2", "Team1": "捷克", "Team2": "南非", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-26", "EventCd": "WC2026G", "Dt": "2026-06-19 03:00:00", "Name": "分組賽 - B4 vs B2", "Team1": "瑞士", "Team2": "波斯尼亞", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-27", "EventCd": "WC2026G", "Dt": "2026-06-19 06:00:00", "Name": "分組賽 - B1 vs B3", "Team1": "加拿大", "Team2": "卡塔爾", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-28", "EventCd": "WC2026G", "Dt": "2026-06-19 09:00:00", "Name": "分組賽 - A1 vs A3", "Team1": "墨西哥", "Team2": "韓國", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-29", "EventCd": "WC2026G", "Dt": "2026-06-20 03:00:00", "Name": "分組賽 - D1 vs D3", "Team1": "美國", "Team2": "澳洲", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-30", "EventCd": "WC2026G", "Dt": "2026-06-20 06:00:00", "Name": "分組賽 - C4 vs C2", "Team1": "蘇格蘭", "Team2": "摩洛哥", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-31", "EventCd": "WC2026G", "Dt": "2026-06-20 08:30:00", "Name": "分組賽 - C1 vs C3", "Team1": "巴西", "Team2": "海地", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-32", "EventCd": "WC2026G", "Dt": "2026-06-20 11:00:00", "Name": "分組賽 - D4 vs D2", "Team1": "土耳其", "Team2": "巴拉圭", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-33", "EventCd": "WC2026G", "Dt": "2026-06-21 01:00:00", "Name": "分組賽 - F1 vs F3", "Team1": "荷蘭", "Team2": "瑞典", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-34", "EventCd": "WC2026G", "Dt": "2026-06-21 04:00:00", "Name": "分組賽 - E1 vs E3", "Team1": "德國", "Team2": "科特迪瓦", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-35", "EventCd": "WC2026G", "Dt": "2026-06-21 08:00:00", "Name": "分組賽 - E4 vs E2", "Team1": "厄瓜多爾", "Team2": "庫拉索", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-36", "EventCd": "WC2026G", "Dt": "2026-06-21 12:00:00", "Name": "分組賽 - F4 vs F2", "Team1": "突尼西亞", "Team2": "日本", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-37", "EventCd": "WC2026G", "Dt": "2026-06-22 00:00:00", "Name": "分組賽 - H1 vs H3", "Team1": "西班牙", "Team2": "沙地阿拉伯", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-38", "EventCd": "WC2026G", "Dt": "2026-06-22 03:00:00", "Name": "分組賽 - G1 vs G3", "Team1": "比利時", "Team2": "伊朗", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-39", "EventCd": "WC2026G", "Dt": "2026-06-22 06:00:00", "Name": "分組賽 - H4 vs H2", "Team1": "烏拉圭", "Team2": "佛得角", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-40", "EventCd": "WC2026G", "Dt": "2026-06-22 09:00:00", "Name": "分組賽 - G4 vs G2", "Team1": "紐西蘭", "Team2": "埃及", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-41", "EventCd": "WC2026G", "Dt": "2026-06-23 01:00:00", "Name": "分組賽 - J1 vs J3", "Team1": "阿根廷", "Team2": "奧地利", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-42", "EventCd": "WC2026G", "Dt": "2026-06-23 05:00:00", "Name": "分組賽 - I1 vs I3", "Team1": "法國", "Team2": "伊拉克", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-43", "EventCd": "WC2026G", "Dt": "2026-06-23 08:00:00", "Name": "分組賽 - I4 vs I2", "Team1": "挪威", "Team2": "塞內加爾", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-44", "EventCd": "WC2026G", "Dt": "2026-06-23 11:00:00", "Name": "分組賽 - J4 vs J2", "Team1": "約旦", "Team2": "阿爾及利亞", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-45", "EventCd": "WC2026G", "Dt": "2026-06-24 01:00:00", "Name": "分組賽 - K1 vs K3", "Team1": "葡萄牙", "Team2": "烏茲別克", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-46", "EventCd": "WC2026G", "Dt": "2026-06-24 04:00:00", "Name": "分組賽 - L1 vs L3", "Team1": "英格蘭", "Team2": "加納", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-47", "EventCd": "WC2026G", "Dt": "2026-06-24 07:00:00", "Name": "分組賽 - L4 vs L2", "Team1": "巴拿馬", "Team2": "克羅地亞", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-48", "EventCd": "WC2026G", "Dt": "2026-06-24 10:00:00", "Name": "分組賽 - K4 vs K2", "Team1": "哥倫比亞", "Team2": "剛果民主共和國", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-49", "EventCd": "WC2026G", "Dt": "2026-06-25 03:00:00", "Name": "分組賽 - B4 vs B1", "Team1": "瑞士", "Team2": "加拿大", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-50", "EventCd": "WC2026G", "Dt": "2026-06-25 03:00:00", "Name": "分組賽 - B2 vs B3", "Team1": "波斯尼亞", "Team2": "卡塔爾", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-51", "EventCd": "WC2026G", "Dt": "2026-06-25 06:00:00", "Name": "分組賽 - C4 vs C1", "Team1": "蘇格蘭", "Team2": "巴西", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-52", "EventCd": "WC2026G", "Dt": "2026-06-25 06:00:00", "Name": "分組賽 - C2 vs C3", "Team1": "摩洛哥", "Team2": "海地", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-53", "EventCd": "WC2026G", "Dt": "2026-06-25 09:00:00", "Name": "分組賽 - A4 vs A1", "Team1": "捷克", "Team2": "墨西哥", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-54", "EventCd": "WC2026G", "Dt": "2026-06-25 09:00:00", "Name": "分組賽 - A2 vs A3", "Team1": "南非", "Team2": "韓國", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-55", "EventCd": "WC2026G", "Dt": "2026-06-26 04:00:00", "Name": "分組賽 - E2 vs E3", "Team1": "庫拉索", "Team2": "科特迪瓦", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-56", "EventCd": "WC2026G", "Dt": "2026-06-26 04:00:00", "Name": "分組賽 - E4 vs E1", "Team1": "厄瓜多爾", "Team2": "德國", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-57", "EventCd": "WC2026G", "Dt": "2026-06-26 07:00:00", "Name": "分組賽 - F2 vs F3", "Team1": "日本", "Team2": "瑞典", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-58", "EventCd": "WC2026G", "Dt": "2026-06-26 07:00:00", "Name": "分組賽 - F4 vs F1", "Team1": "突尼西亞", "Team2": "荷蘭", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-59", "EventCd": "WC2026G", "Dt": "2026-06-26 10:00:00", "Name": "分組賽 - D4 vs D1", "Team1": "土耳其", "Team2": "美國", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-60", "EventCd": "WC2026G", "Dt": "2026-06-26 10:00:00", "Name": "分組賽 - D2 vs D3", "Team1": "巴拉圭", "Team2": "澳洲", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-61", "EventCd": "WC2026G", "Dt": "2026-06-27 03:00:00", "Name": "分組賽 - I4 vs I1", "Team1": "挪威", "Team2": "法國", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-62", "EventCd": "WC2026G", "Dt": "2026-06-27 03:00:00", "Name": "分組賽 - I2 vs I3", "Team1": "塞內加爾", "Team2": "伊拉克", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-63", "EventCd": "WC2026G", "Dt": "2026-06-27 08:00:00", "Name": "分組賽 - H2 vs H3", "Team1": "佛得角", "Team2": "沙地阿拉伯", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-64", "EventCd": "WC2026G", "Dt": "2026-06-27 08:00:00", "Name": "分組賽 - H4 vs H1", "Team1": "烏拉圭", "Team2": "西班牙", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-65", "EventCd": "WC2026G", "Dt": "2026-06-27 11:00:00", "Name": "分組賽 - G2 vs G3", "Team1": "埃及", "Team2": "伊朗", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-66", "EventCd": "WC2026G", "Dt": "2026-06-27 11:00:00", "Name": "分組賽 - G4 vs G1", "Team1": "紐西蘭", "Team2": "比利時", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-67", "EventCd": "WC2026G", "Dt": "2026-06-28 05:00:00", "Name": "分組賽 - L4 vs L1", "Team1": "巴拿馬", "Team2": "英格蘭", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-68", "EventCd": "WC2026G", "Dt": "2026-06-28 05:00:00", "Name": "分組賽 - L2 vs L3", "Team1": "克羅地亞", "Team2": "加納", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-69", "EventCd": "WC2026G", "Dt": "2026-06-28 07:30:00", "Name": "分組賽 - K4 vs K1", "Team1": "哥倫比亞", "Team2": "葡萄牙", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-70", "EventCd": "WC2026G", "Dt": "2026-06-28 07:30:00", "Name": "分組賽 - K2 vs K3", "Team1": "剛果民主共和國", "Team2": "烏茲別克", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-71", "EventCd": "WC2026G", "Dt": "2026-06-28 10:00:00", "Name": "分組賽 - J2 vs J3", "Team1": "阿爾及利亞", "Team2": "奧地利", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026G-72", "EventCd": "WC2026G", "Dt": "2026-06-28 10:00:00", "Name": "分組賽 - J4 vs J1", "Team1": "約旦", "Team2": "阿根廷", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-01", "EventCd": "WC2026K", "Dt": "2026-06-29 03:00:00", "Name": "32強 - 2A vs 2B", "Team1": "南非", "Team2": "加拿大", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-02", "EventCd": "WC2026K", "Dt": "2026-06-30 01:00:00", "Name": "32強 - 1C vs 2F", "Team1": "巴西", "Team2": "日本", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-03", "EventCd": "WC2026K", "Dt": "2026-06-30 04:30:00", "Name": "32強 - 1E vs 3-ABCDF", "Team1": "德國", "Team2": "巴拉圭", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-04", "EventCd": "WC2026K", "Dt": "2026-06-30 09:00:00", "Name": "32強 - 1F vs 2C", "Team1": "荷蘭", "Team2": "摩洛哥", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-05", "EventCd": "WC2026K", "Dt": "2026-07-01 01:00:00", "Name": "32強 - 2E vs 2I", "Team1": "科特迪瓦", "Team2": "挪威", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-06", "EventCd": "WC2026K", "Dt": "2026-07-01 05:00:00", "Name": "32強 - 1I vs 3-CDFGH", "Team1": "法國", "Team2": "瑞典", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-07", "EventCd": "WC2026K", "Dt": "2026-07-01 09:00:00", "Name": "32強 - 1A vs 3-CEFHI", "Team1": "墨西哥", "Team2": "厄瓜多爾", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-08", "EventCd": "WC2026K", "Dt": "2026-07-02 00:00:00", "Name": "32強 - 1L vs 3-EHIJK", "Team1": "英格蘭", "Team2": "剛果民主共和國", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-09", "EventCd": "WC2026K", "Dt": "2026-07-02 04:00:00", "Name": "32強 - 1G vs 3-AEHIJ", "Team1": "比利時", "Team2": "塞內加爾", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-10", "EventCd": "WC2026K", "Dt": "2026-07-02 08:00:00", "Name": "32強 - 1D vs 3-BEFIJ", "Team1": "美國", "Team2": "波斯尼亞", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-11", "EventCd": "WC2026K", "Dt": "2026-07-03 03:00:00", "Name": "32強 - 1H vs 2J", "Team1": "西班牙", "Team2": "奧地利", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-12", "EventCd": "WC2026K", "Dt": "2026-07-03 07:00:00", "Name": "32強 - 2K vs 2L", "Team1": "葡萄牙", "Team2": "克羅地亞", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-13", "EventCd": "WC2026K", "Dt": "2026-07-03 11:00:00", "Name": "32強 - 1B vs 3-EFGIJ", "Team1": "瑞士", "Team2": "阿爾及利亞", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-14", "EventCd": "WC2026K", "Dt": "2026-07-04 02:00:00", "Name": "32強 - 2D vs 2G", "Team1": "澳洲", "Team2": "埃及", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-15", "EventCd": "WC2026K", "Dt": "2026-07-04 06:00:00", "Name": "32強 - 1J vs 2H", "Team1": "阿根廷", "Team2": "佛得角", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-16", "EventCd": "WC2026K", "Dt": "2026-07-04 09:30:00", "Name": "32強 - 1K vs 3-DEIJL", "Team1": "哥倫比亞", "Team2": "加納", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-17", "EventCd": "WC2026K", "Dt": "2026-07-05 01:00:00", "Name": "16強 - W73 vs W75", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-18", "EventCd": "WC2026K", "Dt": "2026-07-05 05:00:00", "Name": "16強 - W74 vs W77", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-19", "EventCd": "WC2026K", "Dt": "2026-07-06 04:00:00", "Name": "16強 - W76 vs W78", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-20", "EventCd": "WC2026K", "Dt": "2026-07-06 08:00:00", "Name": "16強 - W79 vs W80", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-21", "EventCd": "WC2026K", "Dt": "2026-07-07 03:00:00", "Name": "16強 - W83 vs W84", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-22", "EventCd": "WC2026K", "Dt": "2026-07-07 08:00:00", "Name": "16強 - W81 vs W82", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-23", "EventCd": "WC2026K", "Dt": "2026-07-08 00:00:00", "Name": "16強 - W86 vs W88", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-24", "EventCd": "WC2026K", "Dt": "2026-07-08 04:00:00", "Name": "16強 - W85 vs W87", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-25", "EventCd": "WC2026K", "Dt": "2026-07-10 04:00:00", "Name": "8強 - W89 vs W90", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-26", "EventCd": "WC2026K", "Dt": "2026-07-11 03:00:00", "Name": "8強 - W93 vs W94", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-27", "EventCd": "WC2026K", "Dt": "2026-07-12 05:00:00", "Name": "8強 - W91 vs W92", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-28", "EventCd": "WC2026K", "Dt": "2026-07-12 09:00:00", "Name": "8強 - W95 vs W96", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-29", "EventCd": "WC2026K", "Dt": "2026-07-15 03:00:00", "Name": "4強 - W97 vs W98", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-30", "EventCd": "WC2026K", "Dt": "2026-07-16 03:00:00", "Name": "4強 - W99 vs W100", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-31", "EventCd": "WC2026K", "Dt": "2026-07-19 05:00:00", "Name": "季軍戰 - RU101 vs RU102", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"},
+        {"Cd": "WC2026K-32", "EventCd": "WC2026K", "Dt": "2026-07-20 03:00:00", "Name": "決賽 - W101 vs W102", "Team1": "TBC", "Team2": "TBC", "Score1": 0, "Score2": 0, "IsScoreConfirmed": "N", "UpdateDt": "2026-06-11T03:36:54.869Z"}
+    ];
+
+    const userMatchScores = [
+    ];
+
+    const logEl = document.getElementById('log');
+    const btn = document.getElementById('importBtn');
+    const progressBar = document.getElementById('progress-bar');
+
+    function log(message) {
+        logEl.innerHTML += message + "\n";
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function updateProgress(current, total) {
+        const percentage = (current / total) * 100;
+        progressBar.style.width = `${percentage}%`;
+    }
+
+    async function importData() {
+        btn.disabled = true;
+        logEl.innerHTML = "Starting batch writing process...\n";
+        
+        const totalItems = users.length + events.length + matches.length + userMatchScores.length;
+        let processedItems = 0;
+
+        try {
+            // 1. Users
+            log("--- 👤 Importing Users ---");
+            for (const user of users) {
+                await setDoc(doc(db, "User", user.Cd), user);
+                processedItems++;
+                updateProgress(processedItems, totalItems);
+            }
+            log(`Successfully written ${users.length} user document(s).`);
+
+            // 2. Events
+            log("\n--- 🏆 Importing Events ---");
+            for (const event of events) {
+                await setDoc(doc(db, "Event", event.Cd), event);
+                processedItems++;
+                updateProgress(processedItems, totalItems);
+            }
+            log(`Successfully written ${events.length} event document(s).`);
+
+            // 3. Matches
+            log("\n--- ⚽ Importing Matches (This may take a moment...) ---");
+            for (const match of matches) {
+                await setDoc(doc(db, "Match", match.Cd), match);
+                processedItems++;
+                updateProgress(processedItems, totalItems);
+            }
+            log(`Successfully written ${matches.length} match documents.`);
+
+            // 4. UserMatchScores
+            log("\n--- 📝 Importing User Match Scores ---");
+            for (const ums of userMatchScores) {
+                const docId = `${ums.UserCd}-${ums.MatchCd}`;
+                await setDoc(doc(db, "UserMatchScore", docId), ums);
+                processedItems++;
+                updateProgress(processedItems, totalItems);
+            }
+            log(`Successfully written ${userMatchScores.length} score projection documents.`);
+
+            log("\n🎉 Deployment successful! 100% of data from collections.xlsx is now active on Firestore.");
+
+        } catch (error) {
+            log(`\n❌ Execution Error: ${error.message}`);
+            console.error(error);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    btn.addEventListener('click', importData);
+</script>
+
+</body>
+</html>
