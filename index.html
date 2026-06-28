@@ -224,8 +224,19 @@
         const select = document.getElementById("eventSelect");
         select.innerHTML = "";
 
+        const events = [];
         snapshot.forEach(doc => {
-            const event = doc.data();
+            events.push(doc.data());
+        });
+
+        // Sort events by Cd in descending order
+        events.sort((a, b) => {
+            const cdA = a.Cd || "";
+            const cdB = b.Cd || "";
+            return cdB.localeCompare(cdA);
+        });
+
+        events.forEach(event => {
             const option = document.createElement("option");
             option.value = event.Cd;
             option.textContent = event.Name;
